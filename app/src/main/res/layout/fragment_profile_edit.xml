@@ -1,14 +1,100 @@
-<?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".Fragments.ProfileEditFragment">
+    android:layout_height="wrap_content"
+    tools:context="Fragments.ProfileEditFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
+    <RelativeLayout
+        android:id="@+id/fragment_details"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+        android:paddingTop="@dimen/padding_default">
 
-</FrameLayout>
+        <LinearLayout
+            android:id="@+id/edit_details_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_marginLeft="@dimen/padding_default"
+            android:layout_marginRight="@dimen/padding_default"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/padding_2x"
+                android:layout_marginRight="@dimen/padding_2x"
+                android:alpha="0.54"
+                android:src="@drawable/ic_enter_details" />
+
+            <LinearLayout
+                android:id="@+id/input_details_linear_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/edit_details_layout"
+                android:orientation="vertical"
+                android:paddingEnd="@dimen/padding_default"
+                android:paddingRight="@dimen/padding_default">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/enter_details"
+                    android:textColor="@color/black"
+                    android:textSize="@dimen/typography_title" />
+
+                <TextView
+                    android:id="@+id/name_text_view"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/padding_default"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/profile_name"
+                    android:textSize="@dimen/typography_subheading" />
+
+                <EditText
+                    android:id="@+id/name_edit_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="-3dp"
+                    android:backgroundTint="@color/colorPrimary"
+                    android:inputType="textPersonName"
+                    android:textSize="@dimen/typography_subheading" />
+
+                <TextView
+                    android:id="@+id/email_text_view"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/email"
+                    android:textSize="@dimen/typography_subheading" />
+
+                <EditText
+                    android:id="@+id/email_edit_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="-3dp"
+                    android:backgroundTint="@color/colorPrimary"
+                    android:inputType="textEmailAddress"
+                    android:textSize="@dimen/typography_subheading" />
+
+                <TextView
+                    android:id="@+id/contact_text_view"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Position"
+                    android:textSize="@dimen/typography_subheading" />
+
+                <EditText
+                    android:id="@+id/position_edit_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="-3dp"
+                    android:backgroundTint="@color/colorPrimary"
+                    android:textSize="@dimen/typography_subheading" />
+            </LinearLayout>
+        </LinearLayout>
+    </RelativeLayout>
+</ScrollView>

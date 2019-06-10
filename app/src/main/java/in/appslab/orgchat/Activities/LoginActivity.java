@@ -3,15 +3,19 @@ package in.appslab.orgchat.Activities;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -28,10 +32,13 @@ import com.google.firebase.auth.PhoneAuthCredential;
 import com.google.firebase.auth.PhoneAuthProvider;
 import com.google.firebase.dynamiclinks.FirebaseDynamicLinks;
 import com.google.firebase.dynamiclinks.PendingDynamicLinkData;
+import com.google.firebase.dynamiclinks.ShortDynamicLink;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.concurrent.TimeUnit;
 
 import in.appslab.orgchat.R;
@@ -39,9 +46,10 @@ import in.appslab.orgchat.R;
 public class LoginActivity extends AppCompatActivity {
 
     private static final String TAG="LoginActivity";
+    public static String PREF_NAME="shared values";
     private EditText phoneNumber,vCode;
     private Button sendButton,resendButton, verCodeButton;
-
+    private LinearLayout sendButtonLayout,verifyPhoneLayout;
     private String phoneVerificationID;
     private PhoneAuthProvider.OnVerificationStateChangedCallbacks verificationCallbacks;
     private PhoneAuthProvider.ForceResendingToken resendToken;
@@ -62,10 +70,9 @@ public class LoginActivity extends AppCompatActivity {
             startActivity(new Intent(LoginActivity.this, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK).putExtra("isNewUser",false));
         }
         initViews();
-        getDynamicLink();
     }
 
-    private void getDynamicLink() {
+    private void getDynamicLink(final String pNumber) {
         FirebaseDynamicLinks.getInstance()
                 .getDynamicLink(getIntent())
                 .addOnSuccessListener(this, new OnSuccessListener<PendingDynamicLinkData>() {
@@ -73,10 +80,15 @@ public class LoginActivity extends AppCompatActivity {
                     public void onSuccess(PendingDynamicLinkData pendingDynamicLinkData) {
                         // Get deep link from result (may be null if no link is found)
                         Uri deepLink = null;
+                        Log.d(TAG, "onSuccess: "+pendingDynamicLinkData);
                         if (pendingDynamicLinkData != null) {
                             deepLink = pendingDynamicLinkData.getLink();
-                            String inviterToken = deepLink.getQueryParameter("invitedBy");
-                            sendButton.setEnabled(true);
+                            String inviterToken = deepLink.getQueryParameter("data");
+                            Log.d(TAG, "onSuccess: "+inviterToken);
+                            if(pNumber.equals(inviterToken)) {
+                                verifyPhoneLayout.setVisibility(View.GONE);
+                                sendButtonLayout.setVisibility(View.VISIBLE);
+                            }
                         }
 
                     }
@@ -89,12 +101,18 @@ public class LoginActivity extends AppCompatActivity {
                 });
     }
 
+    public void verifyNumber(View view){
+        //TODO Make a call to the database to see if the fellow exists or not
+        //TODO inviteStatus -1: Not sent; 0: Sent, Not opened; 1:Verified;
+        getDynamicLink(phoneNumber.getText().toString());
+    }
+
 
     public void sendCode(View view){
         Log.d(TAG, "sendCode: Inside");
         String pNumber=phoneNumber.getText().toString();
         Log.d(TAG, "sendCode: "+pNumber);
-        setUpVerificatonCallbacks();
+        setUpVerificationCallbacks();
         setDialog("Requesting OTP");
         PhoneAuthProvider.getInstance().verifyPhoneNumber(
                 pNumber,        // Phone number to verify
@@ -105,8 +123,8 @@ public class LoginActivity extends AppCompatActivity {
 
     }
 
-    private void setUpVerificatonCallbacks() {
-        Log.d(TAG, "setUpVerificatonCallbacks: inside");
+    private void setUpVerificationCallbacks() {
+        Log.d(TAG, "setUpVerificationCallbacks: inside");
 
         verificationCallbacks =
                 new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
@@ -156,7 +174,7 @@ public class LoginActivity extends AppCompatActivity {
 
     public void resendCode(View view){
         String phoneNumber=this.phoneNumber.getText().toString();
-        setUpVerificatonCallbacks();
+        setUpVerificationCallbacks();
         setDialog("Requesting OTP");
         PhoneAuthProvider.getInstance().verifyPhoneNumber(
                 phoneNumber,        // Phone number to verify
@@ -207,18 +225,21 @@ public class LoginActivity extends AppCompatActivity {
         phoneNumber=findViewById(R.id.phone_number);
         vCode=findViewById(R.id.verification_code);
 
+        sendButtonLayout=findViewById(R.id.send_code_layout);
+        verifyPhoneLayout=findViewById(R.id.verify_number_layout);
+
         sendButton=findViewById(R.id.send_code);
         resendButton=findViewById(R.id.resend_code);
         verCodeButton=findViewById(R.id.verify_code);
 
         verCodeButton.setEnabled(false);
         resendButton.setEnabled(false);
-        sendButton.setEnabled(false);
         mobileTextView=findViewById(R.id.mobile_tv);
         verTextView=findViewById(R.id.ver_tv);
         fbAuth=FirebaseAuth.getInstance();
 
     }
+
     private void setDialog(String message){
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View view = getLayoutInflater().inflate(R.layout.item_progress,null);
@@ -237,24 +258,37 @@ public class LoginActivity extends AppCompatActivity {
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        if(moveForward)
+                        if(moveForward) {
                             checkAndStart(currentUserID);
+                            SharedPreferences.Editor editor=getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit();
+                            editor.putString("username",currentUserID);
+                            editor.apply();
+                        }
                     }
                 }).show();
     }
 
-    private void checkAndStart(String uid) {
-        DocumentReference docRef = db.collection("Users").document(uid); //Creating a document reference for the required doc in a collection
-        docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() { //getting data using the docref
+    private void checkAndStart(final String uid) {
+        DocumentReference docRef = db.collection("Users").document(uid);
+        docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
             @Override
             public void onComplete(@NonNull Task<DocumentSnapshot> task) {
                 if (task.isSuccessful()) {
                     DocumentSnapshot document = task.getResult();
                     if (document.exists()) {
-                        startActivity(new Intent(LoginActivity.this, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK).putExtra("isNewUser",false));
+                        try {
+                            SharedPreferences.Editor editor = getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit();
+                            editor.putString("username", uid);
+                            editor.putString("organization", document.get("organization").toString());
+                            editor.putString("name", document.get("name").toString());
+                            editor.apply();
+                        }catch (Exception e){
+                            Log.d(TAG, "onComplete: Error: "+e.getLocalizedMessage());
+                        }
+                        startActivity(new Intent(LoginActivity.this, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
                         Log.d("MainActivity", "onComplete: ");
                     } else {
-                        startActivity(new Intent(LoginActivity.this, ProfileActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK).putExtra("isNewUser",true));
+                        startActivity(new Intent(LoginActivity.this, ProfileActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
                         Log.d("MainActivity", "No such document");
                     }
                 } else {

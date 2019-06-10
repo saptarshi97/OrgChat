@@ -1,30 +1,87 @@
 package in.appslab.orgchat.Activities;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.support.design.widget.FloatingActionButton;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
+import android.widget.RelativeLayout;
+import android.widget.Toast;
 
+import in.appslab.orgchat.Adapters.ProfilePagerAdapter;
+import in.appslab.orgchat.Custom.CustomPager;
+import in.appslab.orgchat.Fragments.ProfileEditFragment;
+import in.appslab.orgchat.Fragments.ProfileFragment;
 import in.appslab.orgchat.R;
 
 public class ProfileActivity extends AppCompatActivity {
+    private ActionBar actionBar;
+    private CustomPager pager;
+    private FloatingActionButton fab;
+    private final long ID_DETAILS_INPUT=0;
+    private final long ID_DETAILS_DISPLAY=1;
+    public static String PREF_NAME="shared values";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
+        actionBar = getSupportActionBar();
+
+        if (getSupportActionBar()!=null) {
+            getSupportActionBar().setTitle("Profile");
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
+
+        fab = (FloatingActionButton)findViewById(R.id.fab);
+        pager = (CustomPager)findViewById(R.id.profile_view_pager);
+        final RelativeLayout parentLayout = (RelativeLayout)findViewById(R.id.activity_profile);
+        final ProfileFragment profileFragment= new ProfileFragment();
+        final ProfileEditFragment profileEditFragment= new ProfileEditFragment();
+
+        final Button button = (Button)findViewById(R.id.save_button);
+
+        ProfilePagerAdapter adapter = new ProfilePagerAdapter(getSupportFragmentManager());
+        adapter.addFragment(profileFragment, ID_DETAILS_INPUT);
+        adapter.addFragment(profileEditFragment, ID_DETAILS_DISPLAY);
+        pager.setAdapter(adapter);
+
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (profileEditFragment.storeDetails()) {
+                    profileFragment.setData();
+                    pager.setCurrentItem(1);
+                    button.setVisibility(View.GONE);
+                    fab.show();
+                }
+                else{
+                    Toast.makeText(ProfileActivity.this, "Please fill all details!", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pager.setCurrentItem(0);
+                fab.hide();
+                button.setVisibility(View.VISIBLE);
+            }
+        });
+
+        SharedPreferences prefs=getSharedPreferences(PREF_NAME,MODE_PRIVATE);
+        if(!prefs.getString("organization","").isEmpty()&& !prefs.getString("name","").isEmpty()){
+            pager.setCurrentItem(1);
+            fab.show();
+            button.setVisibility(View.GONE);
+        }else{
+            pager.setCurrentItem(1);
+            fab.hide();
+            button.setVisibility(View.VISIBLE);
+        }
     }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        //profile_menu
-        return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        return super.onOptionsItemSelected(item);
-    }
-
-
 }
