@@ -13,5 +13,7 @@
     <string name="email">Email</string>
     <string name="phone">Phone</string>
     <string name="details">Details</string>
+    <string name="invite">Create Invite</string>
+    <string name="get_invite">Get Invite</string>
 
 </resources>

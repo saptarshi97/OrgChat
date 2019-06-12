@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
@@ -13,6 +14,7 @@ import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.FrameLayout;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -40,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private TabLayout tabLayout;
     private ViewPager viewPager;
     private ChatPagerAdapter adapter;
+    private FloatingActionButton fab;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences prefs=getSharedPreferences(PREF_NAME,MODE_PRIVATE);
         userID = prefs.getString("username", "");
         token = prefs.getString("registration token", "");
-        company = prefs.getString("company", "");
+        company = prefs.getString("organization", "");
         if (prefs.getInt("updateAvailable", 0) == 1)
             sendTokenToDB(userID, token);
     }
@@ -66,6 +69,8 @@ public class MainActivity extends AppCompatActivity {
 
         tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(viewPager);
+
+        fab = (FloatingActionButton)findViewById(R.id.fab_invite);
     }
 
     private void setupViewPager(ViewPager viewPager){
@@ -94,39 +99,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private Uri constructURL() {
-        Uri baseURI=Uri.parse("https://salesdiary.in");
-        Uri APP_URI = baseURI.buildUpon().appendQueryParameter("data", "9513160907").
-                appendQueryParameter("extra1", "value").
-                appendQueryParameter("extra2", "value").build();
-        String encodedUri = null;
-        try {
-            encodedUri = URLEncoder.encode(APP_URI.toString(), "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            Log.d(TAG, "constructURL: "+e.getLocalizedMessage());
-        }
-        Uri deepLink = Uri.parse("https://orgchat.page.link/?link="+encodedUri+"&apn="+"in.appslab.orgchat");
-        Log.d(TAG, "constructURL: "+deepLink);
-        return deepLink;
-    }
-
-    public void generateContentLink() {
-        Task<ShortDynamicLink> link=FirebaseDynamicLinks.getInstance().createDynamicLink()
-                .setLongLink(constructURL())
-                .buildShortDynamicLink()
-                .addOnCompleteListener(new OnCompleteListener<ShortDynamicLink>() {
-                    @Override
-                    public void onComplete(@NonNull Task<ShortDynamicLink> task) {
-                        if(task.isSuccessful()){
-                            Uri shortLink=task.getResult().getShortLink();
-                            Intent intent=new Intent();
-                            intent.setAction(Intent.ACTION_SEND);
-                            String msg=" Here's your invitation link: "+shortLink.toString();
-                            intent.putExtra(Intent.EXTRA_TEXT, msg);
-                            intent.setType("text/plain");
-                            startActivity(Intent.createChooser(intent, "Share Link"));
-                        }
-                    }
-                });
+    public void createInvite(View view){
+        startActivity(new Intent(this,CreateInviteActivity.class));
     }
 }

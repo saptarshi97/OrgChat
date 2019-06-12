@@ -1,0 +1,126 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context="Activities.CreateInviteActivity">
+
+    <RelativeLayout
+        android:id="@+id/fragment_details"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingTop="@dimen/padding_default">
+
+        <LinearLayout
+            android:id="@+id/edit_details_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_marginLeft="@dimen/padding_default"
+            android:layout_marginRight="@dimen/padding_default"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/padding_2x"
+                android:layout_marginRight="@dimen/padding_2x"
+                android:alpha="0.54"
+                app:srcCompat="@drawable/ic_invitation" />
+
+            <LinearLayout
+                android:id="@+id/input_details_linear_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/edit_details_layout"
+                android:orientation="vertical"
+                android:paddingEnd="@dimen/padding_default"
+                android:paddingRight="@dimen/padding_default">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/invite"
+                    android:textColor="@color/black"
+                    android:textSize="@dimen/typography_title" />
+
+                <TextView
+                    android:id="@+id/name_text_view"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/padding_default"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/profile_name"
+                    android:textSize="@dimen/typography_subheading" />
+
+                <EditText
+                    android:id="@+id/invitee_name_edit_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="-3dp"
+                    android:backgroundTint="@color/colorPrimary"
+                    android:inputType="textPersonName"
+                    android:textSize="@dimen/typography_subheading" />
+
+                <TextView
+                    android:id="@+id/email_text_view"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/email"
+                    android:textSize="@dimen/typography_subheading" />
+
+                <EditText
+                    android:id="@+id/invitee_email_edit_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="-3dp"
+                    android:backgroundTint="@color/colorPrimary"
+                    android:inputType="textEmailAddress"
+                    android:textSize="@dimen/typography_subheading" />
+
+                <TextView
+                    android:id="@+id/contact_text_view"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Phone number"
+                    android:textSize="@dimen/typography_subheading" />
+
+                <EditText
+                    android:id="@+id/invitee_contact_edit_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="-3dp"
+                    android:backgroundTint="@color/colorPrimary"
+                    android:inputType="number"
+                    android:textSize="@dimen/typography_subheading" />
+
+                <TextView
+                    android:id="@+id/team_text_view"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Team"
+                    android:textSize="@dimen/typography_subheading" />
+
+                <Spinner
+                    android:id="@+id/invitee_team_spinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="-3dp"
+                    android:layout_marginBottom="@dimen/padding_half"
+                    android:backgroundTint="@color/colorPrimary"
+                    android:textSize="@dimen/typography_subheading" />
+
+                <Button
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/get_invite"
+                    android:onClick="getInvite"
+                    android:layout_marginBottom="@dimen/padding_half"/>
+            </LinearLayout>
+        </LinearLayout>
+    </RelativeLayout>
+</ScrollView>

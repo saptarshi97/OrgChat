@@ -280,6 +280,7 @@ public class LoginActivity extends AppCompatActivity {
                             SharedPreferences.Editor editor = getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit();
                             editor.putString("username", uid);
                             editor.putString("organization", document.get("organization").toString());
+                            editor.putString("organizationID", document.get("organizationID").toString());
                             editor.putString("name", document.get("name").toString());
                             editor.apply();
                         }catch (Exception e){

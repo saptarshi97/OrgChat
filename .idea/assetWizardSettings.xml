@@ -28,8 +28,9 @@
                         </option>
                         <option name="values">
                           <map>
-                            <entry key="outputName" value="ic_exit_to_app" />
-                            <entry key="sourceFile" value="C:\Users\Mahe" />
+                            <entry key="assetSourceType" value="FILE" />
+                            <entry key="outputName" value="ic_invitation" />
+                            <entry key="sourceFile" value="C:\Users\Mahe\invitation.svg" />
                           </map>
                         </option>
                       </PersistentState>

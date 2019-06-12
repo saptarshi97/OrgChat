@@ -36,6 +36,9 @@ public class ProfileActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
 
+        SharedPreferences prefs=getSharedPreferences(PREF_NAME,MODE_PRIVATE);
+        final String userID=prefs.getString("username","");
+
         fab = (FloatingActionButton)findViewById(R.id.fab);
         pager = (CustomPager)findViewById(R.id.profile_view_pager);
         final RelativeLayout parentLayout = (RelativeLayout)findViewById(R.id.activity_profile);
@@ -53,7 +56,7 @@ public class ProfileActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (profileEditFragment.storeDetails()) {
-                    profileFragment.setData();
+                    profileFragment.setData(userID);
                     pager.setCurrentItem(1);
                     button.setVisibility(View.GONE);
                     fab.show();
@@ -73,13 +76,12 @@ public class ProfileActivity extends AppCompatActivity {
             }
         });
 
-        SharedPreferences prefs=getSharedPreferences(PREF_NAME,MODE_PRIVATE);
         if(!prefs.getString("organization","").isEmpty()&& !prefs.getString("name","").isEmpty()){
             pager.setCurrentItem(1);
             fab.show();
             button.setVisibility(View.GONE);
         }else{
-            pager.setCurrentItem(1);
+            pager.setCurrentItem(0);
             fab.hide();
             button.setVisibility(View.VISIBLE);
         }

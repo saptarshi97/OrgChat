@@ -28,20 +28,25 @@
         <activity android:name=".Activities.LoginActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+
                 <data
                     android:host="salesdiary.in"
                     android:scheme="https" />
             </intent-filter>
         </activity>
-        <activity android:name=".Activities.ProfileActivity"
-        android:parentActivityName=".Activities.MainActivity"
-        android:windowSoftInputMode="adjustPan"/>
+        <activity
+            android:name=".Activities.ProfileActivity"
+            android:parentActivityName=".Activities.MainActivity"
+            android:windowSoftInputMode="adjustPan" />
+        <activity android:name=".Activities.CreateInviteActivity"></activity>
     </application>
 
 </manifest>
