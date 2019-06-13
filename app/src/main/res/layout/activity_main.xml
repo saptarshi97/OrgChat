@@ -47,6 +47,6 @@
         app:srcCompat="@drawable/ic_edit"
         android:tint="#FFFFFF"
         android:onClick="createInvite"
-        android:visibility="visible"/>
+        android:visibility="gone"/>
 
 </RelativeLayout>

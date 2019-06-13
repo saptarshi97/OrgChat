@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.support.annotation.NonNull;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -39,6 +40,7 @@ import in.appslab.orgchat.Models.TeamSpinnerModel;
 import in.appslab.orgchat.R;
 
 public class CreateInviteActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
+    ActionBar actionBar;
     EditText nameEditText,emailEditText,phoneEditText;
     Spinner team;
     String selectedTeam="NA",userID,token,company, selectedTeamID="NA", organizationID;
@@ -51,11 +53,17 @@ public class CreateInviteActivity extends AppCompatActivity implements AdapterVi
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_invite);
-        //TODO Add an isAdmin clause and check if the user is a lead for any team
         init();
+
+        actionBar = getSupportActionBar();
+
+        if (getSupportActionBar()!=null) {
+            getSupportActionBar().setTitle("Profile");
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
     }
 
-    public void getInvite(){
+    public void getInvite(View view){
         if(validateFields()){
             String name,email,phone;
 
@@ -120,10 +128,13 @@ public class CreateInviteActivity extends AppCompatActivity implements AdapterVi
 
     private boolean validateFields(){
         if(nameEditText.getText().toString().isEmpty()){
+            nameEditText.requestFocus();
             showAlert("Name field cannot be empty");
         }else if(emailEditText.getText().toString().isEmpty()){
+            emailEditText.requestFocus();
             showAlert("Email field cannot be empty");
         }else if(phoneEditText.getText().toString().isEmpty() || phoneEditText.getText().toString().length()<10 || phoneEditText.getText().toString().length()>10){
+            phoneEditText.requestFocus();
             showAlert("Phone field is either empty or length is incorrect");
         }else if(selectedTeamID.equals("NA")){
             showAlert("Please select team");
