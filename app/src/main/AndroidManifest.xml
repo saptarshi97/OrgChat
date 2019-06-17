@@ -15,7 +15,7 @@
         <activity
             android:name=".Activities.MainActivity"
             android:theme="@style/AppTheme.NoActionBar"
-            android:windowSoftInputMode="adjustPan"/>
+            android:windowSoftInputMode="adjustPan" />
 
         <service
             android:name=".Services.MyFirebaseMessagingService"
@@ -26,7 +26,8 @@
             </intent-filter>
         </service>
 
-        <activity android:name=".Activities.LoginActivity"
+        <activity
+            android:name=".Activities.LoginActivity"
             android:windowSoftInputMode="adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -44,15 +45,15 @@
                     android:scheme="https" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".Activities.ProfileActivity"
             android:parentActivityName=".Activities.MainActivity"
             android:windowSoftInputMode="adjustPan" />
-
-        <activity android:name=".Activities.CreateInviteActivity"
-            android:windowSoftInputMode="adjustPan">
-        </activity>
+        <activity
+            android:name=".Activities.CreateInviteActivity"
+            android:windowSoftInputMode="adjustPan" />
+        <activity android:name=".Activities.TokenChatActivity" />
+        <activity android:name=".Activities.TopicChatActivity"></activity>
     </application>
 
 </manifest>

@@ -36,6 +36,7 @@ import com.google.firebase.dynamiclinks.ShortDynamicLink;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -104,7 +105,34 @@ public class LoginActivity extends AppCompatActivity {
     public void verifyNumber(View view){
         //TODO Make a call to the database to see if the fellow exists or not
         //TODO inviteStatus -1: Not sent; 0: Sent, Not opened; 1:Verified;
-        getDynamicLink(phoneNumber.getText().toString());
+        final String pNumber=phoneNumber.getText().toString();
+        DocumentReference docRef=db.collection("Users").document(pNumber);
+        docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                if(task.isSuccessful()){
+                    DocumentSnapshot docSnap=task.getResult();
+                    if(docSnap.exists()){
+                        try{
+                            if(docSnap.get("isInvited")==null){
+                                getDynamicLink(pNumber);
+                            }else{
+                                if(docSnap.get("isInvited").toString().equals("0")){
+                                    getDynamicLink(pNumber);
+                                }else if(docSnap.get("isInvited").toString().equals("1")){
+                                    verifyPhoneLayout.setVisibility(View.GONE);
+                                    sendButtonLayout.setVisibility(View.VISIBLE);
+                                }
+                            }
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+                    }else{
+                        getDynamicLink(pNumber);
+                    }
+                }
+            }
+        });
     }
 
 
