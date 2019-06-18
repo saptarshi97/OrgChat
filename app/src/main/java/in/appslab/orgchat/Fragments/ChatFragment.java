@@ -1,8 +1,7 @@
 package in.appslab.orgchat.Fragments;
 
-import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
@@ -11,11 +10,15 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -27,6 +30,9 @@ import com.google.firebase.firestore.QuerySnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
+import in.appslab.orgchat.Activities.CreateTeamActivity;
+import in.appslab.orgchat.Activities.LoginActivity;
+import in.appslab.orgchat.Activities.ProfileActivity;
 import in.appslab.orgchat.Adapters.UsersOfCompanyAdapter;
 import in.appslab.orgchat.Models.UsersOfCompanyModel;
 import in.appslab.orgchat.R;
@@ -37,10 +43,12 @@ import static android.content.Context.MODE_PRIVATE;
 public class ChatFragment extends Fragment {
     public static String PREF_NAME="shared values";
     List<UsersOfCompanyModel> list;
+    String userID,company;
     List<UsersOfCompanyModel> adminsList;
     private static final String TAG = "CompanyUsersFragment";
     UsersOfCompanyAdapter adapter;
     FirebaseFirestore db;
+    SharedPreferences prefs=getActivity().getSharedPreferences(PREF_NAME,MODE_PRIVATE);
     boolean isLead=false;
     public ChatFragment() {
         // Required empty public constructor
@@ -55,6 +63,7 @@ public class ChatFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
     }
 
     @Override
@@ -62,7 +71,6 @@ public class ChatFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view=inflater.inflate(R.layout.fragment_chat, container, false);
-        SharedPreferences prefs=getActivity().getSharedPreferences(PREF_NAME,MODE_PRIVATE);
         String nameOfUser=prefs.getString("name","");
         try {
             getActivity().setTitle(nameOfUser);
@@ -70,13 +78,58 @@ public class ChatFragment extends Fragment {
             e.printStackTrace();
         }
         init();
-        String userID=prefs.getString("username","");
-        String company=prefs.getString("organization","");
+        userID=prefs.getString("username","");
+        company=prefs.getString("organization","");
         String myToken=prefs.getString("registration token","");
         loadRecyclerView(view);
         loadCompany(userID,company);
         loadTeamsForUser(userID,company);
         return view;
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu,MenuInflater inflater) {
+        if(prefs.getBoolean("isOrgAdmin",false)) {
+            inflater.inflate(R.menu.orgadmin_menu, menu);
+        }else{
+            inflater.inflate(R.menu.general_menu, menu);
+        }
+        super.onCreateOptionsMenu(menu,inflater);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if(prefs.getBoolean("isOrgAdmin",false)) {
+            switch (item.getItemId()) {
+                case R.id.logout_menu_item:
+                    logout();
+                    break;
+                case R.id.profile_menu_item:
+                    startActivity(new Intent(getActivity(), ProfileActivity.class));
+                    break;
+                case R.id.create_team_menu_item:
+                    startActivityForResult(new Intent(getActivity(), CreateTeamActivity.class), 2);
+                    break;
+            }
+        }else{
+            switch (item.getItemId()) {
+                case R.id.logout_menu_item:
+                    logout();
+                    break;
+                case R.id.profile_menu_item:
+                    startActivity(new Intent(getActivity(), ProfileActivity.class));
+                    break;
+            }
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode==2){
+            loadTeamsForUser(userID,company);
+        }
     }
 
     private void loadCompany(final String userID, final String company) {
@@ -198,6 +251,11 @@ public class ChatFragment extends Fragment {
                 }
             }
         });
+    }
+
+    private void logout() {
+        FirebaseAuth.getInstance().signOut();
+        startActivity(new Intent(getActivity(),LoginActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
     }
 
     private void init() {

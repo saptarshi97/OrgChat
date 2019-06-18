@@ -67,27 +67,6 @@ public class MainActivity extends AppCompatActivity {
         setFabIfLead();
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.general_menu,menu);
-        return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()){
-            case R.id.logout_menu_item:
-                logout();
-                break;
-        }
-        return true;
-    }
-
-    private void logout() {
-        FirebaseAuth.getInstance().signOut();
-        startActivity(new Intent(this,LoginActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
-    }
-
 
     private void setFabIfLead() {   //-1 for not lead, 0 for not checked, 1 for lead for some team
         if(prefs.getInt("isLead",0)==1) {

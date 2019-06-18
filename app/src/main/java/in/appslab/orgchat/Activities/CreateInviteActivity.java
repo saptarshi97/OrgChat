@@ -40,7 +40,6 @@ import in.appslab.orgchat.Models.TeamSpinnerModel;
 import in.appslab.orgchat.R;
 
 public class CreateInviteActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
-    ActionBar actionBar;
     EditText nameEditText,emailEditText,phoneEditText;
     Spinner team;
     String selectedTeam="NA",userID,token,company, selectedTeamID="NA", organizationID;
@@ -54,8 +53,6 @@ public class CreateInviteActivity extends AppCompatActivity implements AdapterVi
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_invite);
         init();
-
-        actionBar = getSupportActionBar();
 
         if (getSupportActionBar()!=null) {
             getSupportActionBar().setTitle("Profile");

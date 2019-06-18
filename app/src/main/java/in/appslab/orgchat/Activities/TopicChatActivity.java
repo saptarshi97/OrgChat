@@ -54,6 +54,9 @@ public class TopicChatActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_topic_chat);
+        if(getSupportActionBar()!=null){
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
         SharedPreferences prefs=getSharedPreferences(PREF_NAME,Context.MODE_PRIVATE);
         mDatabase = Realm.getDefaultInstance();
         Bundle mBundle=getIntent().getExtras();

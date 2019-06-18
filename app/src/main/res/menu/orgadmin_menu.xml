@@ -13,4 +13,9 @@
         android:icon="@drawable/ic_profile"
         app:showAsAction="ifRoom"
         />
+    <item
+        android:id="@+id/create_team_menu_item"
+        android:title="Create Team"
+        app:showAsAction="never"
+        />
 </menu>

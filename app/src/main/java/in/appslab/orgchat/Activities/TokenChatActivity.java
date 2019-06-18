@@ -55,6 +55,9 @@ public class TokenChatActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_token_chat);
+        if(getSupportActionBar()!=null){
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
         mDatabase = Realm.getDefaultInstance();
         Bundle mBundle=getIntent().getExtras();
         testDestinationToken = mBundle.getString("registrationToken");

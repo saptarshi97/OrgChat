@@ -310,6 +310,11 @@ public class LoginActivity extends AppCompatActivity {
                             editor.putString("organization", document.get("organization").toString());
                             editor.putString("organizationID", document.get("organizationID").toString());
                             editor.putString("name", document.get("name").toString());
+                            if(document.get("isOrgAdmin")!=null){
+                                if(document.getBoolean("isOrgAdmin")){
+                                    editor.putBoolean("isOrgAdmin", true);
+                                }
+                            }
                             editor.apply();
                         }catch (Exception e){
                             Log.d(TAG, "onComplete: Error: "+e.getLocalizedMessage());
