@@ -15,5 +15,6 @@
     <string name="details">Details</string>
     <string name="invite">Create Invite</string>
     <string name="get_invite">Get Invite</string>
+    <string name="enter_team_name">Enter team name</string>
 
 </resources>

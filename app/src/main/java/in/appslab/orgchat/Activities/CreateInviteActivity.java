@@ -80,7 +80,11 @@ public class CreateInviteActivity extends AppCompatActivity implements AdapterVi
         data.put("organization",company);
         data.put("organizationID",organizationID);
         data.put("token","NA");
-        data.put("team", Arrays.asList(selectedTeamID));
+        if(selectedTeamID.equals("No Team") || selectedTeamID.equals("NA")) {
+            data.put("team", Arrays.asList(organizationID));
+        }else{
+            data.put("team", Arrays.asList(selectedTeamID, organizationID));
+        }
 
         //Updating users collection here
         db.collection("Users").document(phone).set(data).addOnSuccessListener(new OnSuccessListener<Void>() {
@@ -97,17 +101,19 @@ public class CreateInviteActivity extends AppCompatActivity implements AdapterVi
         });
 
         //Updating teams collection here
-        db.collection("teams").document(selectedTeamID).update("subscribed_tokens", FieldValue.arrayUnion(phone)).addOnSuccessListener(new OnSuccessListener<Void>() {
-            @Override
-            public void onSuccess(Void aVoid) {
-                Log.d(TAG, "onSuccess: teams collection updated");
-            }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                Log.d(TAG, "onSuccess: error updating teams collection");
-            }
-        });
+        if( !(selectedTeamID.equals("No Team") || selectedTeamID.equals("NA")) ) {
+            db.collection("teams").document(selectedTeamID).update("subscribed_tokens", FieldValue.arrayUnion(phone)).addOnSuccessListener(new OnSuccessListener<Void>() {
+                @Override
+                public void onSuccess(Void aVoid) {
+                    Log.d(TAG, "onSuccess: teams collection updated");
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Log.d(TAG, "onSuccess: error updating teams collection");
+                }
+            });
+        }
 
         //Updating companies collection here
         db.collection("companies").document(organizationID).update("members", FieldValue.arrayUnion(phone)).addOnSuccessListener(new OnSuccessListener<Void>() {
@@ -133,9 +139,9 @@ public class CreateInviteActivity extends AppCompatActivity implements AdapterVi
         }else if(phoneEditText.getText().toString().isEmpty() || phoneEditText.getText().toString().length()<10 || phoneEditText.getText().toString().length()>10){
             phoneEditText.requestFocus();
             showAlert("Phone field is either empty or length is incorrect");
-        }else if(selectedTeamID.equals("NA")){
+        }/*else if(selectedTeamID.equals("NA")){
             showAlert("Please select team");
-        }else{
+        }*/else{
             return true;
         }
         return false;
@@ -204,6 +210,7 @@ public class CreateInviteActivity extends AppCompatActivity implements AdapterVi
     }
 
     private void setAdapterForSpinner() {
+        teamsList.add(0,new TeamSpinnerModel("No Team","No Team"));
         Query query=db.collection("teams").whereEqualTo("company",company).whereEqualTo("lead_id",userID);
         query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
             @Override
