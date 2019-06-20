@@ -52,13 +52,17 @@
         <activity
             android:name=".Activities.CreateInviteActivity"
             android:windowSoftInputMode="adjustPan" />
-        <activity android:name=".Activities.TokenChatActivity"
-            android:windowSoftInputMode="adjustPan"/>
-        <activity android:name=".Activities.TopicChatActivity"
-            android:windowSoftInputMode="adjustPan"/>
-        <activity android:name=".Activities.CreateTeamActivity"
-            android:windowSoftInputMode="adjustPan">
-        </activity>
+        <activity
+            android:name=".Activities.TokenChatActivity"
+            android:windowSoftInputMode="adjustPan" />
+        <activity
+            android:name=".Activities.TopicChatActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="adjustPan" />
+        <activity
+            android:name=".Activities.CreateTeamActivity"
+            android:windowSoftInputMode="adjustPan"></activity>
+        <activity android:name=".Activities.ModifyTeamActivity"></activity>
     </application>
 
 </manifest>

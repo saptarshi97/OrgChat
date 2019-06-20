@@ -69,8 +69,8 @@ public class TokenChatActivity extends AppCompatActivity {
         initViews();
         Log.d(TAG, "onCreate: self ID " + selfID);
         Log.d(TAG, "onCreate: destination token: " + testDestinationToken);
-        initReceiver();
         init();
+        initReceiver();
     }
 
     private void initReceiver() {

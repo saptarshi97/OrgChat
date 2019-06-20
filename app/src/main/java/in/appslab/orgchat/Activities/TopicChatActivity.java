@@ -10,6 +10,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
@@ -44,6 +45,7 @@ public class TopicChatActivity extends AppCompatActivity {
     BroadcastReceiver receiver;
     private String selfID;
     private String topic;
+    private Toolbar toolbar;
     private static final String TAG = "TopicChatFragment";
     public static String PREF_NAME="shared values";
     private String legacyServerKey="key=AIzaSyCJsQ88WD_mqV0XYw9brGS9RJfOhXyOiKU";
@@ -54,9 +56,6 @@ public class TopicChatActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_topic_chat);
-        if(getSupportActionBar()!=null){
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        }
         SharedPreferences prefs=getSharedPreferences(PREF_NAME,Context.MODE_PRIVATE);
         mDatabase = Realm.getDefaultInstance();
         Bundle mBundle=getIntent().getExtras();
@@ -64,7 +63,12 @@ public class TopicChatActivity extends AppCompatActivity {
         fragmentTitle=mBundle.getString("name");
         selfID = prefs.getString("username", "");
         initViews();
-        init();
+        toolbar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(TopicChatActivity.this, ModifyTeamActivity.class).putExtra("topic",topic).putExtra("selfID",selfID));
+            }
+        });
     }
 
     private void initReceiver() {
@@ -166,14 +170,18 @@ public class TopicChatActivity extends AppCompatActivity {
     }
 
     private void initViews(){  // Method for initializing the views
+        toolbar=findViewById(R.id.topic_chat_toolbar);
         try {
-            setTitle(fragmentTitle);
+            setSupportActionBar(toolbar);
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            toolbar.setTitle(fragmentTitle);
         }catch (Exception e){
             e.printStackTrace();
         }
         rv=findViewById(R.id.topic_chat_rv);
         inputEditText=findViewById(R.id.topic_input);
         send=findViewById(R.id.topic_send);
+        init();
         initReceiver();
     }
 

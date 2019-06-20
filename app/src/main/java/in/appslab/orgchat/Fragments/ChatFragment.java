@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
@@ -15,6 +16,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -50,6 +52,7 @@ public class ChatFragment extends Fragment {
     FirebaseFirestore db;
     SharedPreferences prefs=getActivity().getSharedPreferences(PREF_NAME,MODE_PRIVATE);
     boolean isLead=false;
+    private LinearLayout rootLayout;
     public ChatFragment() {
         // Required empty public constructor
     }
@@ -71,6 +74,7 @@ public class ChatFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view=inflater.inflate(R.layout.fragment_chat, container, false);
+        rootLayout=view.findViewById(R.id.root_ll);
         String nameOfUser=prefs.getString("name","");
         try {
             getActivity().setTitle(nameOfUser);
@@ -129,6 +133,8 @@ public class ChatFragment extends Fragment {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode==2){
             loadTeamsForUser(userID,company);
+        }else{
+            Snackbar.make(rootLayout,"Unable to create team, try again",Snackbar.LENGTH_SHORT).show();
         }
     }
 
