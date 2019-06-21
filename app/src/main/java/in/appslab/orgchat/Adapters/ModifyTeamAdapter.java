@@ -22,7 +22,7 @@ public class ModifyTeamAdapter extends RecyclerView.Adapter<ModifyTeamAdapter.Mo
     private ModificationOptionsInterface optionsInterface;
 
     public interface ModificationOptionsInterface{
-        public void showOptions(String userID, String name);
+        public void showOptions(String userID, String name, String token);
     }
 
     public ModifyTeamAdapter(Context context, List<CreateTeamModel> members, ModificationOptionsInterface optionsInterface){
@@ -63,7 +63,7 @@ public class ModifyTeamAdapter extends RecyclerView.Adapter<ModifyTeamAdapter.Mo
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    optionsInterface.showOptions(member.getUserID(),member.getName());
+                    optionsInterface.showOptions(member.getUserID(),member.getName(),member.getUserToken());
                 }
             });
         }

@@ -48,7 +48,7 @@ public class TopicChatActivity extends AppCompatActivity {
     private Toolbar toolbar;
     private static final String TAG = "TopicChatFragment";
     public static String PREF_NAME="shared values";
-    private String legacyServerKey="key=AIzaSyCJsQ88WD_mqV0XYw9brGS9RJfOhXyOiKU";
+        private String legacyServerKey="key=AIzaSyCJsQ88WD_mqV0XYw9brGS9RJfOhXyOiKU";
     private String fragmentTitle;
     private Realm mDatabase;
 

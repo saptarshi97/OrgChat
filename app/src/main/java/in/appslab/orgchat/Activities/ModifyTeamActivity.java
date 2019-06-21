@@ -10,10 +10,15 @@ import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.View;
+import android.widget.LinearLayout;
 
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
@@ -21,7 +26,13 @@ import java.util.List;
 
 import in.appslab.orgchat.Adapters.ModifyTeamAdapter;
 import in.appslab.orgchat.Models.CreateTeamModel;
+import in.appslab.orgchat.Models.RemoveMemberModel;
+import in.appslab.orgchat.Models.RemoveMemberResponseModel;
+import in.appslab.orgchat.Network.RemovalAPIClient;
 import in.appslab.orgchat.R;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ModifyTeamActivity extends AppCompatActivity {
     private FirebaseFirestore db;
@@ -30,7 +41,9 @@ public class ModifyTeamActivity extends AppCompatActivity {
     private String leadID;
     private RecyclerView recyclerView;
     private ModifyTeamAdapter adapter;
+    private LinearLayout addTeamLL,deleteTeamLL;
     private List<CreateTeamModel> list=new ArrayList<>();
+    private String legacyServerKey="key=AIzaSyCJsQ88WD_mqV0XYw9brGS9RJfOhXyOiKU";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,33 +56,107 @@ public class ModifyTeamActivity extends AppCompatActivity {
     }
 
     private void init() {
+        db=FirebaseFirestore.getInstance();
         Intent intent=getIntent();
         selfID=intent.getStringExtra("selfID");
         topic=intent.getStringExtra("topic");
+        addTeamLL=findViewById(R.id.add_team_member_ll);
+        deleteTeamLL=findViewById(R.id.delete_team_ll);
         recyclerView=findViewById(R.id.topic_members_rv);
+
+        deleteTeamLL.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                deleteTeam();
+            }
+        });
+        addTeamLL.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                addTeamMember();
+            }
+        });
         ModifyTeamAdapter.ModificationOptionsInterface optionsInter = new ModifyTeamAdapter.ModificationOptionsInterface() {
             @Override
-            public void showOptions(String userID, String name) {
-                loadOptionsDialog(userID,name);
+            public void showOptions(String userID, String name, String token) {
+                loadOptionsDialog(userID,name,token);
             }
         };
+
         adapter=new ModifyTeamAdapter(this,list,optionsInter);
         initRv();
         getTeamMembersFromDb();
     }
 
-    private void loadOptionsDialog(final String userID, String name) {
+    private void addTeamMember() {
+    }
+
+    private void deleteTeam() {
+        //TODO Delete the team document
+        //TODO Remove the team from the user docs
+        //TODO unsub tokens from the topics
+        db.collection("teams").document(topic).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            List<String> userIDs=new ArrayList<>();
+            @Override
+            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                if(task.isSuccessful() && task.getResult()!=null){
+                    DocumentSnapshot docSnap=task.getResult();
+                    userIDs=(List<String>)docSnap.get("subscribed_tokens");
+                }
+            }
+        });
+        db.collection("teams").document(topic).delete()
+        .addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void aVoid) {
+                Log.d(ModifyTeamActivity.class.getSimpleName(), "onSuccess: Deleted team successfully from db");
+            }
+        })
+        .addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Log.d(ModifyTeamActivity.class.getSimpleName(), "onFailure: Failed to delete team from db");
+            }
+        });
+    }
+
+    private void loadOptionsDialog(final String userID, final String name, final String token) {
         if(!selfID.equals(leadID))
             return;
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        String[] opts={"Remove "+name+" from the Team"};
+        String[] opts={"Remove "+name+" from the Team", "Chat with "+name};
         builder.setItems(opts, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
                 switch(i) {
                     case 0:
-                        removeMember(userID);
+                        new AlertDialog.Builder(ModifyTeamActivity.this)
+                                .setTitle("Alert")
+                                .setIcon(R.drawable.ic_warn)
+                                .setCancelable(false)
+                                .setMessage("Do you really want to remove "+name)
+                                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        removeMember(userID,token);
+                                    }
+                                })
+                                .setNeutralButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                    }
+                                }).show();
+                        break;
+                    case 1:
+                        Bundle bundle=new Bundle();
+                        Intent intent=new Intent(ModifyTeamActivity.this,TokenChatActivity.class);
+                        bundle.putString("registrationToken", token);
+                        bundle.putString("name", name);
+                        bundle.putString("userID",userID);
+                        intent.putExtras(bundle);
+                        startActivity(intent);
+                        finish();
                         break;
                     default:
                         Log.d(ModifyTeamActivity.class.getSimpleName(), "onClick: unknown case");
@@ -80,10 +167,62 @@ public class ModifyTeamActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    private void removeMember(String userID) {
-        //TODO Write code to kick and unsubscribe the userID
-        //TODO https://developers.google.com/instance-id/reference/server
-        //TODO https://iid.googleapis.com/iid/v1:batchRemove(POST)
+    private void removeMember(final String userID, String token) {
+        db.collection("teams").document(topic).update("subscribed_tokens",FieldValue.arrayRemove(userID))
+        .addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void aVoid) {
+                Log.d(ModifyTeamActivity.class.getSimpleName(), "onSuccess: "+userID+" Deleted from team: "+topic);
+            }
+        })
+        .addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Log.d(ModifyTeamActivity.class.getSimpleName(), "onFailure: "+userID+" not deleted from team: "+topic);
+            }
+        });
+
+        db.collection("Users").document(userID).update("team",FieldValue.arrayRemove(topic))
+        .addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void aVoid) {
+                Log.d(ModifyTeamActivity.class.getSimpleName(), "onSuccess: "+topic+" deleted from profile of user: "+userID);
+            }
+        })
+        .addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Log.d(ModifyTeamActivity.class.getSimpleName(), "onFailure: "+topic+" not deleted from profile of user: "+userID);
+            }
+        });
+
+        RemoveMemberModel remove=new RemoveMemberModel();
+        remove.setTo("/topics/"+topic);
+        List<String> tokens=new ArrayList<>();
+        tokens.add(token);
+        remove.setRegistrationTokens(tokens);
+
+        Call<RemoveMemberResponseModel> call= RemovalAPIClient.getAPIInterface().removeMember(legacyServerKey,remove);
+        call.enqueue(new Callback<RemoveMemberResponseModel>() {
+            @Override
+            public void onResponse(Call<RemoveMemberResponseModel> call, Response<RemoveMemberResponseModel> response) {
+                try {
+                    if(response.isSuccessful())
+                        Log.d(ModifyTeamActivity.class.getSimpleName(), "onResponse: " + response.body().getResults());
+                    //TODO Show something to denote things didnt pan out as planned in an else-block
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<RemoveMemberResponseModel> call, Throwable t) {
+                //TODO Show something to denote things didnt pan out as planned
+                Log.d(ModifyTeamActivity.class.getSimpleName(), "onFailure: Error");
+            }
+        });
+
+        getTeamMembersFromDb();
     }
 
     private void getTeamMembersFromDb() {
@@ -95,6 +234,10 @@ public class ModifyTeamActivity extends AppCompatActivity {
                     DocumentSnapshot docSnap=task.getResult();
                     userIDs=(List<String>)docSnap.get("subscribed_tokens");
                     leadID=docSnap.getString("lead_id");
+                    if(selfID.equals(leadID)){
+                        addTeamLL.setVisibility(View.VISIBLE);
+                        deleteTeamLL.setVisibility(View.VISIBLE);
+                    }
                 }
                 try {
                     if(!userIDs.isEmpty()) {
@@ -104,7 +247,9 @@ public class ModifyTeamActivity extends AppCompatActivity {
                                 public void onComplete(@NonNull Task<DocumentSnapshot> task) {
                                     if(task.isSuccessful()&&task.getResult()!=null) {
                                         DocumentSnapshot docSnap = task.getResult();
-                                        list.add(new CreateTeamModel(docSnap.getString("name"),docSnap.getId()));
+                                        CreateTeamModel team=new CreateTeamModel(docSnap.getString("name"),docSnap.getId());
+                                        team.setUserToken(docSnap.getString("token"));
+                                        list.add(team);
                                     }
                                     adapter.notifyDataSetChanged();
                                 }

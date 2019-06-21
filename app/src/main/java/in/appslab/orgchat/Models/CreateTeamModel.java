@@ -1,5 +1,7 @@
 package in.appslab.orgchat.Models;
 
+import android.support.annotation.Nullable;
+
 import java.io.Serializable;
 
 /**
@@ -9,6 +11,8 @@ public class CreateTeamModel implements Serializable {
     private boolean isChecked=false;
     private String name;
     private String userID;
+    @Nullable
+    private String userToken=null;
 
     public CreateTeamModel(String name, String userID) {
         this.name = name;
@@ -29,5 +33,14 @@ public class CreateTeamModel implements Serializable {
 
     public String getUserID() {
         return userID;
+    }
+
+    @Nullable
+    public String getUserToken() {
+        return userToken;
+    }
+
+    public void setUserToken(@Nullable String userToken) {
+        this.userToken = userToken;
     }
 }
