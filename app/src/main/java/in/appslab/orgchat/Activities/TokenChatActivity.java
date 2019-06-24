@@ -10,7 +10,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -50,6 +52,9 @@ public class TokenChatActivity extends AppCompatActivity {
     private String selfID;
     private String destinationUserID;
     private Realm mDatabase;
+    private Toolbar toolbar;
+    public static boolean isInActionMode = false;
+    public static ArrayList<ChatModel> selectionList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +76,69 @@ public class TokenChatActivity extends AppCompatActivity {
         Log.d(TAG, "onCreate: destination token: " + testDestinationToken);
         init();
         initReceiver();
+    }
+
+    private void initViews(){  // Method for initializing the views
+        toolbar=findViewById(R.id.token_chat_toolbar);
+        try {
+            setSupportActionBar(toolbar);
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            toolbar.setTitle(nameOfUser);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        rv=findViewById(R.id.topic_chat_rv);
+        inputEditText=findViewById(R.id.topic_input);
+        send=findViewById(R.id.topic_send);
+    }
+
+    private void init() {
+        List<ChatModel> results1 = mDatabase.copyFromRealm(mDatabase.where(ChatModel.class)
+                .equalTo("isTopic", 0)
+                .equalTo("sender", destinationUserID)
+                .equalTo("receiver", selfID)
+                .sort("timestamp")
+                .findAll());
+
+        List<ChatModel> results2 = mDatabase.copyFromRealm(mDatabase.where(ChatModel.class)
+                .equalTo("isTopic", 0)
+                .equalTo("sender", selfID)
+                .equalTo("receiver", destinationUserID)
+                .sort("timestamp")
+                .findAll());
+
+        Log.d(TAG, "onCreateView: results1:"+results1.size()+" results2:"+results2.size());
+
+        results1.addAll(results2);
+        Collections.sort(results1, new SortByTimeStamp());
+
+        if (!results1.isEmpty()) {
+            chatModelList.clear();
+            chatModelList.addAll(results1);
+            Log.d(TAG, "onCreateView: adapter notified// list size: " + chatModelList.size());
+        } else {
+            Log.d(TAG, "onCreateView: RealmResult empty");
+        }
+
+        adapter = new ChatAdapter(chatModelList, this);
+        rv.setAdapter(adapter);
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+        linearLayoutManager.setStackFromEnd(true);
+        rv.setLayoutManager(linearLayoutManager);
+        send.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (inputEditText.getText().toString().isEmpty())
+                    return;
+                String msg = inputEditText.getText().toString();
+                inputEditText.setText("");
+                inputEditText.setHint("Send Message");
+                String time = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(new Date());
+
+                sendPayload(msg, time, selfID, testDestinationToken);
+            }
+        });
     }
 
     private void initReceiver() {
@@ -127,55 +195,6 @@ public class TokenChatActivity extends AppCompatActivity {
         };
     }
 
-    private void init() {
-        List<ChatModel> results1 = mDatabase.copyFromRealm(mDatabase.where(ChatModel.class)
-                .equalTo("isTopic", 0)
-                .equalTo("sender", destinationUserID)
-                .equalTo("receiver", selfID)
-                .sort("timestamp")
-                .findAll());
-
-        List<ChatModel> results2 = mDatabase.copyFromRealm(mDatabase.where(ChatModel.class)
-                .equalTo("isTopic", 0)
-                .equalTo("sender", selfID)
-                .equalTo("receiver", destinationUserID)
-                .sort("timestamp")
-                .findAll());
-
-        Log.d(TAG, "onCreateView: results1:"+results1.size()+" results2:"+results2.size());
-
-        results1.addAll(results2);
-        Collections.sort(results1, new SortByTimeStamp());
-
-        if (!results1.isEmpty()) {
-            chatModelList.clear();
-            chatModelList.addAll(results1);
-            Log.d(TAG, "onCreateView: adapter notified// list size: " + chatModelList.size());
-        } else {
-            Log.d(TAG, "onCreateView: RealmResult empty");
-        }
-
-        adapter = new ChatAdapter(chatModelList, this);
-        rv.setAdapter(adapter);
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
-        linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
-        linearLayoutManager.setStackFromEnd(true);
-        rv.setLayoutManager(linearLayoutManager);
-        send.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (inputEditText.getText().toString().isEmpty())
-                    return;
-                String msg = inputEditText.getText().toString();
-                inputEditText.setText("");
-                inputEditText.setHint("Send Message");
-                String time = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(new Date());
-
-                sendPayload(msg, time, selfID, testDestinationToken);
-            }
-        });
-    }
-
     private void sendPayload(final String msg, final String time, final String selfID, final String destinationToken) {
         //TODO Possible crash to empty topic name
         Data data = new Data(msg, time, selfID, "", 0);
@@ -220,6 +239,86 @@ public class TokenChatActivity extends AppCompatActivity {
         mDatabase.commitTransaction();
     }
 
+    private void prepareToolbar(int position) {
+        // prepare action mode
+        try {
+            toolbar.getMenu().clear();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        toolbar.inflateMenu(R.menu.menu_action_mode);
+        isInActionMode = true;
+        adapter.notifyDataSetChanged();
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
+        prepareSelection(position);
+    }
+
+    public void prepareSelection(int position) {
+
+        if (!selectionList.contains(chatModelList.get(position))) {
+            selectionList.add(chatModelList.get(position));
+        } else {
+            selectionList.remove(chatModelList.get(position));
+        }
+        updateViewCounter();
+    }
+
+    private void updateViewCounter() {
+        int counter = selectionList.size();
+        if (counter == 1) {
+            // reply
+            toolbar.getMenu().getItem(0).setVisible(true);
+        } else {
+            toolbar.getMenu().getItem(0).setVisible(false);
+        }
+
+        toolbar.setTitle(counter);
+    }
+
+    public void clearActionMode() {
+        isInActionMode = false;
+        toolbar.getMenu().clear();
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+        }
+        toolbar.setTitle(nameOfUser);
+        selectionList.clear();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (isInActionMode) {
+            clearActionMode();
+            adapter.notifyDataSetChanged();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()){
+            case R.id.reply_action:
+                clearActionMode();
+                return true;
+            case R.id.copy_action:
+                clearActionMode();
+                return true;
+            case R.id.delete_action:
+                clearActionMode();
+                return true;
+            case R.id.forward_action:
+                clearActionMode();
+                return true;
+            default:
+                clearActionMode();
+                adapter.notifyDataSetChanged();
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
     @Override
     public void onStart() { //Overriding onStart() to receive a LocalBroadcast from FirebaseMessagingService
         super.onStart();
@@ -244,16 +343,6 @@ public class TokenChatActivity extends AppCompatActivity {
         }
     }
 
-    private void initViews(){  // Method for initializing the views
-        try {
-            setTitle(nameOfUser);
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-        rv=findViewById(R.id.topic_chat_rv);
-        inputEditText=findViewById(R.id.topic_input);
-        send=findViewById(R.id.topic_send);
-    }
 
     class SortByTimeStamp implements Comparator<ChatModel> {
         public int compare(ChatModel a, ChatModel b) {

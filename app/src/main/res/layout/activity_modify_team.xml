@@ -8,51 +8,6 @@
     tools:context=".Activities.ModifyTeamActivity">
 
     <LinearLayout
-        android:id="@+id/add_team_member_ll"
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingBottom="@dimen/padding_half"
-        android:visibility="gone"
-        android:background="?android:attr/selectableItemBackground">
-        <FrameLayout
-            android:layout_marginTop="@dimen/padding_half"
-            android:layout_marginLeft="@dimen/padding_half"
-            android:layout_marginRight="@dimen/padding_half"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/circle_bg">
-            <ImageView
-                android:layout_width="42dp"
-                android:layout_height="42dp"
-                android:paddingLeft="4dp"
-                android:paddingTop="4dp"
-                android:paddingRight="4dp"
-                android:paddingBottom="4dp"
-                app:srcCompat="@drawable/ic_person_add"
-                android:gravity="center"
-                android:text="A"
-                android:textColor="@color/white"
-                android:textSize="24sp" />
-        </FrameLayout>
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="16dp"
-                android:layout_marginRight="16dp"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:maxLength="36"
-                android:text="Add a new member"/>
-    </LinearLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@android:color/darker_gray"/>
-
-    <LinearLayout
         android:id="@+id/delete_team_ll"
         android:orientation="horizontal"
         android:layout_width="match_parent"

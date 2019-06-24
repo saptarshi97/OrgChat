@@ -54,7 +54,8 @@
             android:windowSoftInputMode="adjustPan" />
         <activity
             android:name=".Activities.TokenChatActivity"
-            android:windowSoftInputMode="adjustPan" />
+            android:windowSoftInputMode="adjustPan"
+            android:theme="@style/AppTheme.NoActionBar"/>
         <activity
             android:name=".Activities.TopicChatActivity"
             android:theme="@style/AppTheme.NoActionBar"
