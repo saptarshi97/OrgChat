@@ -1,6 +1,8 @@
 package in.appslab.orgchat.Activities;
 
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -16,6 +18,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -41,7 +44,7 @@ public class TokenChatActivity extends AppCompatActivity {
     private RecyclerView rv;
     private EditText inputEditText;
     private ImageView send;
-    ChatAdapter adapter;
+    private ChatAdapter adapter;
     private List<ChatModel> chatModelList = new ArrayList<>();
     BroadcastReceiver receiver;
     private static final String TAG = "TokenChatFragment";
@@ -120,7 +123,36 @@ public class TokenChatActivity extends AppCompatActivity {
             Log.d(TAG, "onCreateView: RealmResult empty");
         }
 
-        adapter = new ChatAdapter(chatModelList, this);
+        ChatAdapter.ActionModeInterface actionModeInterface= new ChatAdapter.ActionModeInterface() {
+            @Override
+            public void onClickHandler(int position) {
+                if(isInActionMode){
+                    prepareSelection(position);
+                    if(adapter!=null){
+                        adapter.notifyItemChanged(position);
+                    }
+                }
+            }
+
+            @Override
+            public void onLongClickHandler(int position) {
+                prepareToolbar(position);
+            }
+
+            @Override
+            public boolean setSelectionColor(ChatModel chat) {
+                try {
+                    if(isInActionMode){
+                        if(selectionList.contains(chat))
+                            return true;
+                    }
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+                return false;
+            }
+        };
+        adapter = new ChatAdapter(chatModelList, this,actionModeInterface);
         rv.setAdapter(adapter);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
         linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
@@ -239,7 +271,7 @@ public class TokenChatActivity extends AppCompatActivity {
         mDatabase.commitTransaction();
     }
 
-    private void prepareToolbar(int position) {
+    public void prepareToolbar(int position) {
         // prepare action mode
         try {
             toolbar.getMenu().clear();
@@ -279,7 +311,11 @@ public class TokenChatActivity extends AppCompatActivity {
 
     public void clearActionMode() {
         isInActionMode = false;
-        toolbar.getMenu().clear();
+        try {
+            toolbar.getMenu().clear();
+        }catch(Exception e){
+            e.printStackTrace();
+        }
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         }
@@ -304,6 +340,7 @@ public class TokenChatActivity extends AppCompatActivity {
                 clearActionMode();
                 return true;
             case R.id.copy_action:
+                copyToClip(selectionList);
                 clearActionMode();
                 return true;
             case R.id.delete_action:
@@ -317,6 +354,20 @@ public class TokenChatActivity extends AppCompatActivity {
                 adapter.notifyDataSetChanged();
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void copyToClip(ArrayList<ChatModel> selectionList) {
+        String x="";
+        for (ChatModel y:selectionList) {
+            if (selectionList.size() != 1)
+                x+= "" + y.getSender() + ":" + y.getChatMessage() + " ";
+            else
+                x+=y.getChatMessage();
+        }
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText("Copied Text", x);
+        clipboard.setPrimaryClip(clip);
+        Toast.makeText(this,"Copied to clipboard", Toast.LENGTH_SHORT).show();
     }
 
     @Override

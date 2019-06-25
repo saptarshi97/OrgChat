@@ -1,6 +1,8 @@
 package in.appslab.orgchat.Activities;
 
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -12,9 +14,11 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -48,9 +52,11 @@ public class TopicChatActivity extends AppCompatActivity {
     private Toolbar toolbar;
     private static final String TAG = "TopicChatFragment";
     public static String PREF_NAME="shared values";
-        private String legacyServerKey="key=AIzaSyCJsQ88WD_mqV0XYw9brGS9RJfOhXyOiKU";
+    private String legacyServerKey="key=AIzaSyCJsQ88WD_mqV0XYw9brGS9RJfOhXyOiKU";
     private String fragmentTitle;
     private Realm mDatabase;
+    public static boolean isInActionMode = false;
+    public static ArrayList<ChatModel> selectionList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -148,7 +154,36 @@ public class TopicChatActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        adapter = new ChatAdapter(chatModelList,this);
+        ChatAdapter.ActionModeInterface actionModeInterface= new ChatAdapter.ActionModeInterface() {
+            @Override
+            public void onClickHandler(int position) {
+                if(isInActionMode){
+                    prepareSelection(position);
+                    if(adapter!=null){
+                        adapter.notifyItemChanged(position);
+                    }
+                }
+            }
+
+            @Override
+            public void onLongClickHandler(int position) {
+                prepareToolbar(position);
+            }
+
+            @Override
+            public boolean setSelectionColor(ChatModel chat) {
+                try {
+                    if(isInActionMode){
+                        if(selectionList.contains(chat))
+                            return true;
+                    }
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+                return false;
+            }
+        };
+        adapter = new ChatAdapter(chatModelList,this,actionModeInterface);
         rv.setAdapter(adapter);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
         linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
@@ -224,6 +259,111 @@ public class TopicChatActivity extends AppCompatActivity {
         adapter.notifyDataSetChanged();
         rv.scrollToPosition(adapter.getItemCount()-1);
         mDatabase.commitTransaction();
+    }
+
+    public void prepareToolbar(int position) {
+        // prepare action mode
+        try {
+            toolbar.getMenu().clear();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        toolbar.inflateMenu(R.menu.menu_action_mode);
+        isInActionMode = true;
+        adapter.notifyDataSetChanged();
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
+        prepareSelection(position);
+    }
+
+    public void prepareSelection(int position) {
+
+        if (!selectionList.contains(chatModelList.get(position))) {
+            selectionList.add(chatModelList.get(position));
+        } else {
+            selectionList.remove(chatModelList.get(position));
+        }
+        updateViewCounter();
+    }
+
+    private void updateViewCounter() {
+        int counter = selectionList.size();
+        if (counter == 1) {
+            // reply
+            toolbar.getMenu().getItem(0).setVisible(true);
+        } else {
+            toolbar.getMenu().getItem(0).setVisible(false);
+        }
+
+        toolbar.setTitle(counter);
+    }
+
+    public void clearActionMode() {
+        isInActionMode = false;
+        try {
+            toolbar.getMenu().clear();
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+        }
+        toolbar.setTitle(fragmentTitle);
+        //Probable need to set click listener on toolbar again
+        selectionList.clear();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (isInActionMode) {
+            clearActionMode();
+            adapter.notifyDataSetChanged();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()){
+            case R.id.reply_action:
+                clearActionMode();
+                return true;
+            case R.id.copy_action:
+                copyToClip(selectionList);
+                clearActionMode();
+                return true;
+            case R.id.delete_action:
+                clearActionMode();
+                return true;
+            case R.id.forward_action:
+                forwardMessage(selectionList);
+                clearActionMode();
+                return true;
+            default:
+                clearActionMode();
+                adapter.notifyDataSetChanged();
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void forwardMessage(ArrayList<ChatModel> selectionList) {
+        //TODO Check size of the forward, must be <=4KB
+    }
+
+    private void copyToClip(ArrayList<ChatModel> selectionList) {
+        String x="";
+        for (ChatModel y:selectionList) {
+            if (selectionList.size() != 1)
+                x+= "" + y.getSender() + ":" + y.getChatMessage() + " ";
+            else
+                x+=y.getChatMessage();
+        }
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText("Copied Text", x);
+        clipboard.setPrimaryClip(clip);
+        Toast.makeText(this,"Copied to clipboard", Toast.LENGTH_SHORT).show();
     }
 
     @Override

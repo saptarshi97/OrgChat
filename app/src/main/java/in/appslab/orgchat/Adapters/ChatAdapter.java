@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 import java.util.List;
 
+import in.appslab.orgchat.Activities.TokenChatActivity;
 import in.appslab.orgchat.Models.ChatModel;
 import in.appslab.orgchat.R;
 
@@ -28,11 +29,18 @@ public class ChatAdapter extends RecyclerView.Adapter {
     public static String PREF_NAME="shared values";
     Activity activity;
     private String selfID;
+    private ActionModeInterface actionModeInterface;
+    public interface ActionModeInterface{
+        public void onClickHandler(int position);
+        public void onLongClickHandler(int position);
+        public boolean setSelectionColor(ChatModel chat);
+    }
 
 
-    public ChatAdapter(List<ChatModel> chatModelList, Activity activity){
+    public ChatAdapter(List<ChatModel> chatModelList, Activity activity, ActionModeInterface actionModeInterface){
         this.chatModelList=chatModelList;
         this.activity=activity;
+        this.actionModeInterface=actionModeInterface;
         SharedPreferences prefs=activity.getSharedPreferences(PREF_NAME,Context.MODE_PRIVATE);
         this.selfID=prefs.getString("username","");
 
@@ -88,31 +96,67 @@ public class ChatAdapter extends RecyclerView.Adapter {
         return chatModelList.size();
     }
 
-    private class SentMessageHolder extends RecyclerView.ViewHolder {
+    private class SentMessageHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener, View.OnClickListener{
         TextView messageText;
+        View v;
 
         SentMessageHolder(View itemView) {
             super(itemView);
             messageText = (TextView) itemView.findViewById(R.id.chat_right_msg_text_view);
+            v=itemView;
+            itemView.setOnLongClickListener(this);
+            itemView.setOnClickListener(this);
         }
 
         void bind(ChatModel chat) {
             messageText.setText(chat.getChatMessage());
+            if(actionModeInterface.setSelectionColor(chat)){
+                v.setBackgroundResource(R.color.selection);
+            }
+        }
+
+        @Override
+        public boolean onLongClick(View view) {
+            actionModeInterface.onLongClickHandler(getAdapterPosition());
+            return true;
+        }
+
+        @Override
+        public void onClick(View view) {
+            actionModeInterface.onClickHandler(getAdapterPosition());
         }
     }
 
-    private class ReceivedMessageHolder extends RecyclerView.ViewHolder {
+    private class ReceivedMessageHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener, View.OnClickListener{
         TextView messageText, userIDText;
+        View v;
 
         ReceivedMessageHolder(View itemView) {
             super(itemView);
             messageText = (TextView) itemView.findViewById(R.id.chat_left_msg_text_view);
             userIDText= itemView.findViewById(R.id.user_id);
+            v=itemView;
+            itemView.setOnLongClickListener(this);
+            itemView.setOnClickListener(this);
         }
 
         void bind(ChatModel chat) {
             messageText.setText(chat.getChatMessage());
             userIDText.setText(chat.getSender());
+            if(actionModeInterface.setSelectionColor(chat)){
+                v.setBackgroundResource(R.color.selection);
+            }
+        }
+
+        @Override
+        public boolean onLongClick(View view) {
+            actionModeInterface.onLongClickHandler(getAdapterPosition());
+            return true;
+        }
+
+        @Override
+        public void onClick(View view) {
+            actionModeInterface.onClickHandler(getAdapterPosition());
         }
     }
 }
