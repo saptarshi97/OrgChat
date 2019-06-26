@@ -44,6 +44,7 @@ public class ModifyTeamActivity extends AppCompatActivity {
     private ModifyTeamAdapter adapter;
     private LinearLayout deleteTeamLL;
     private List<CreateTeamModel> list=new ArrayList<>();
+    private static String TAG=ModifyTeamActivity.class.getSimpleName();
     private String legacyServerKey="key=AIzaSyCJsQ88WD_mqV0XYw9brGS9RJfOhXyOiKU";
 
     @Override
@@ -110,13 +111,13 @@ public class ModifyTeamActivity extends AppCompatActivity {
                                     .addOnSuccessListener(new OnSuccessListener<Void>() {
                                         @Override
                                         public void onSuccess(Void aVoid) {
-                                            Log.d(ModifyTeamActivity.class.getSimpleName(), "onSuccess: Done!");
+                                            Log.d(TAG, "onSuccess: Done!");
                                         }
                                     })
                                     .addOnFailureListener(new OnFailureListener() {
                                         @Override
                                         public void onFailure(@NonNull Exception e) {
-                                            Log.d(ModifyTeamActivity.class.getSimpleName(), "onFailure: " + e.getLocalizedMessage());
+                                            Log.d(TAG, "onFailure: " + e.getLocalizedMessage());
                                         }
                                     });
                         }
@@ -135,7 +136,7 @@ public class ModifyTeamActivity extends AppCompatActivity {
                     public void onResponse(Call<RemoveMemberResponseModel> call, Response<RemoveMemberResponseModel> response) {
                         try {
                             if(response.isSuccessful())
-                                Log.d(ModifyTeamActivity.class.getSimpleName(), "onResponse: " + response.body().getResults());
+                                Log.d(TAG, "onResponse: " + response.body().getResults());
                             //TODO Show something to denote things didnt pan out as planned in an else-block
                         }catch (Exception e){
                             e.printStackTrace();
@@ -145,7 +146,7 @@ public class ModifyTeamActivity extends AppCompatActivity {
                     @Override
                     public void onFailure(Call<RemoveMemberResponseModel> call, Throwable t) {
                         //TODO Show something to denote things didnt pan out as planned
-                        Log.d(ModifyTeamActivity.class.getSimpleName(), "onFailure: Error");
+                        Log.d(TAG, "onFailure: Error");
                     }
                 });
             }
@@ -155,13 +156,13 @@ public class ModifyTeamActivity extends AppCompatActivity {
         .addOnSuccessListener(new OnSuccessListener<Void>() {
             @Override
             public void onSuccess(Void aVoid) {
-                Log.d(ModifyTeamActivity.class.getSimpleName(), "onSuccess: Deleted team successfully from db");
+                Log.d(TAG, "onSuccess: Deleted team successfully from db");
             }
         })
         .addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-                Log.d(ModifyTeamActivity.class.getSimpleName(), "onFailure: Failed to delete team from db");
+                Log.d(TAG, "onFailure: Failed to delete team from db");
             }
         });
         //Since the damn thing doesn't exist anymore
@@ -207,7 +208,7 @@ public class ModifyTeamActivity extends AppCompatActivity {
                         finish();
                         break;
                     default:
-                        Log.d(ModifyTeamActivity.class.getSimpleName(), "onClick: unknown case");
+                        Log.d(TAG, "onClick: unknown case");
                 }
             }
         });
@@ -220,13 +221,13 @@ public class ModifyTeamActivity extends AppCompatActivity {
         .addOnSuccessListener(new OnSuccessListener<Void>() {
             @Override
             public void onSuccess(Void aVoid) {
-                Log.d(ModifyTeamActivity.class.getSimpleName(), "onSuccess: "+userID+" Deleted from team: "+topic);
+                Log.d(TAG, "onSuccess: "+userID+" Deleted from team: "+topic);
             }
         })
         .addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-                Log.d(ModifyTeamActivity.class.getSimpleName(), "onFailure: "+userID+" not deleted from team: "+topic);
+                Log.d(TAG, "onFailure: "+userID+" not deleted from team: "+topic);
             }
         });
 
@@ -234,13 +235,13 @@ public class ModifyTeamActivity extends AppCompatActivity {
         .addOnSuccessListener(new OnSuccessListener<Void>() {
             @Override
             public void onSuccess(Void aVoid) {
-                Log.d(ModifyTeamActivity.class.getSimpleName(), "onSuccess: "+topic+" deleted from profile of user: "+userID);
+                Log.d(TAG, "onSuccess: "+topic+" deleted from profile of user: "+userID);
             }
         })
         .addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-                Log.d(ModifyTeamActivity.class.getSimpleName(), "onFailure: "+topic+" not deleted from profile of user: "+userID);
+                Log.d(TAG, "onFailure: "+topic+" not deleted from profile of user: "+userID);
             }
         });
 
@@ -256,7 +257,7 @@ public class ModifyTeamActivity extends AppCompatActivity {
             public void onResponse(Call<RemoveMemberResponseModel> call, Response<RemoveMemberResponseModel> response) {
                 try {
                     if(response.isSuccessful())
-                        Log.d(ModifyTeamActivity.class.getSimpleName(), "onResponse: " + response.body().getResults());
+                        Log.d(TAG, "onResponse: " + response.body().getResults());
                     //TODO Show something to denote things didnt pan out as planned in an else-block
                 }catch (Exception e){
                     e.printStackTrace();
@@ -266,7 +267,7 @@ public class ModifyTeamActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<RemoveMemberResponseModel> call, Throwable t) {
                 //TODO Show something to denote things didnt pan out as planned
-                Log.d(ModifyTeamActivity.class.getSimpleName(), "onFailure: Error");
+                Log.d(TAG, "onFailure: Error");
             }
         });
 
@@ -304,7 +305,7 @@ public class ModifyTeamActivity extends AppCompatActivity {
                         }
                     }
                 }catch (Exception e){
-                    Log.d(ModifyTeamActivity.class.getSimpleName(), "onComplete: Exception with message: "+e.getLocalizedMessage());
+                    Log.d(TAG, "onComplete: Exception with message: "+e.getLocalizedMessage());
                 }
             }
         });

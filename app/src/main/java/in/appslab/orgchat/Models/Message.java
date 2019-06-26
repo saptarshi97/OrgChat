@@ -11,6 +11,8 @@ public class Message {
     private int success; // Success response for token-based messages sent
     private int failure; // Error response for token-based messages sent
 
+    public Message(){}
+
     public Message(String to,Data data){
         this.to=to;
         this.data=data;

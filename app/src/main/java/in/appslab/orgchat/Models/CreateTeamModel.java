@@ -13,6 +13,8 @@ public class CreateTeamModel implements Serializable {
     private String userID;
     @Nullable
     private String userToken=null;
+    @Nullable
+    private int isTopic=0;
 
     public CreateTeamModel(String name, String userID) {
         this.name = name;
@@ -42,5 +44,27 @@ public class CreateTeamModel implements Serializable {
 
     public void setUserToken(@Nullable String userToken) {
         this.userToken = userToken;
+    }
+
+    @Nullable
+    public int getIsTopic() {
+        return isTopic;
+    }
+
+    public void setIsTopic(@Nullable int isTopic) {
+        this.isTopic = isTopic;
+    }
+
+    @Override
+    public int hashCode() {
+        return 31*userID.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(!(obj instanceof  CreateTeamModel))
+            return false;
+        CreateTeamModel uObj=(CreateTeamModel)obj;
+        return userID.equals(uObj.userID) && name.equals(uObj.name);
     }
 }

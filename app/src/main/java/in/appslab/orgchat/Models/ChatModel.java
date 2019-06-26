@@ -1,11 +1,13 @@
 package in.appslab.orgchat.Models;
 
+import java.io.Serializable;
+
 import io.realm.RealmObject;
 
 /**
  * Created by Saptarshi on 6/3/2019.
  */
-public class ChatModel extends RealmObject {
+public class ChatModel extends RealmObject implements Serializable {
     private String chatMessage;
     private String timestamp;
     private String sender;

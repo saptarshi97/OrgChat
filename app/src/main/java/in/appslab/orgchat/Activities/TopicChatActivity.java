@@ -20,6 +20,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -349,14 +350,14 @@ public class TopicChatActivity extends AppCompatActivity {
     }
 
     private void forwardMessage(ArrayList<ChatModel> selectionList) {
-        //TODO Check size of the forward, must be <=4KB
+        startActivity(new Intent(this,RecipientListActivity.class).putExtra("list",(Serializable)selectionList));
     }
 
     private void copyToClip(ArrayList<ChatModel> selectionList) {
         String x="";
         for (ChatModel y:selectionList) {
             if (selectionList.size() != 1)
-                x+= "" + y.getSender() + ":" + y.getChatMessage() + " ";
+                x+=y.getSender() + ":" + y.getChatMessage() + "\n";
             else
                 x+=y.getChatMessage();
         }
