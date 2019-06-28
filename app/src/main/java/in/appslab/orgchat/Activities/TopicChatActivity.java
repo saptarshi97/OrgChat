@@ -191,6 +191,12 @@ public class TopicChatActivity extends AppCompatActivity {
                 }
                 return false;
             }
+
+            @Override
+            public void replyClickHandler(int position) {
+                if(!isInActionMode)
+                    rv.scrollToPosition(position);
+            }
         };
         adapter = new ChatAdapter(chatModelList,this,actionModeInterface);
         rv.setAdapter(adapter);

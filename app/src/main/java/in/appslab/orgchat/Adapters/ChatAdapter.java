@@ -35,6 +35,7 @@ public class ChatAdapter extends RecyclerView.Adapter {
         public void onClickHandler(int position);
         public void onLongClickHandler(int position);
         public boolean setSelectionColor(ChatModel chat);
+        public void replyClickHandler(int position);
     }
 
 
@@ -96,6 +97,17 @@ public class ChatAdapter extends RecyclerView.Adapter {
         return chatModelList.size();
     }
 
+    private int getObjPos(String id){
+        try {
+            for (int i = 0; i < chatModelList.size(); i++)
+                if (chatModelList.get(i).getMessageId().equals(id))
+                    return i;
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
     private class SentMessageHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener, View.OnClickListener{
         LinearLayout rightReplyLayout;
         TextView messageText,rightReplyTextview;
@@ -115,10 +127,18 @@ public class ChatAdapter extends RecyclerView.Adapter {
         void bind(ChatModel chat) {
             messageText.setText(chat.getChatMessage());
             if(chat.getQuotedMessageId()!=null){
-                div.setVisibility(View.VISIBLE);
-                rightReplyLayout.setVisibility(View.VISIBLE);
-                if(chatModelList.indexOf(chat.getQuotedMessageId())!=-1)
-                rightReplyTextview.setText("");
+                final int pos=getObjPos(chat.getQuotedMessageId());
+                if(pos!=-1) {
+                    div.setVisibility(View.VISIBLE);
+                    rightReplyLayout.setVisibility(View.VISIBLE);
+                    rightReplyTextview.setText(chatModelList.get(pos).getChatMessage());
+                    rightReplyLayout.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            actionModeInterface.replyClickHandler(pos);
+                        }
+                    });
+                }
             }
             if(actionModeInterface.setSelectionColor(chat)){
                 v.setBackgroundResource(R.color.selection);
@@ -138,13 +158,17 @@ public class ChatAdapter extends RecyclerView.Adapter {
     }
 
     private class ReceivedMessageHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener, View.OnClickListener{
-        TextView messageText, userIDText;
-        View v;
+        LinearLayout leftReplyLayout;
+        TextView messageText, userIDText,leftReplyTextView;
+        View v,div;
 
         ReceivedMessageHolder(View itemView) {
             super(itemView);
             messageText = (TextView) itemView.findViewById(R.id.chat_left_msg_text_view);
             userIDText= itemView.findViewById(R.id.user_id);
+            leftReplyLayout=itemView.findViewById(R.id.left_reply_layout);
+            leftReplyTextView=itemView.findViewById(R.id.left_reply_textview);
+            div=itemView.findViewById(R.id.left_reply_divider);
             v=itemView;
             itemView.setOnLongClickListener(this);
             itemView.setOnClickListener(this);
@@ -153,6 +177,20 @@ public class ChatAdapter extends RecyclerView.Adapter {
         void bind(ChatModel chat) {
             messageText.setText(chat.getChatMessage());
             userIDText.setText(chat.getSender());
+            if(chat.getQuotedMessageId()!=null){
+                final int pos=getObjPos(chat.getQuotedMessageId());
+                if(pos!=-1) {
+                    div.setVisibility(View.VISIBLE);
+                    leftReplyLayout.setVisibility(View.VISIBLE);
+                    leftReplyTextView.setText(chatModelList.get(pos).getChatMessage());
+                    leftReplyLayout.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            actionModeInterface.replyClickHandler(pos);
+                        }
+                    });
+                }
+            }
             if(actionModeInterface.setSelectionColor(chat)){
                 v.setBackgroundResource(R.color.selection);
             }
