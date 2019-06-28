@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.List;
@@ -43,7 +44,6 @@ public class ChatAdapter extends RecyclerView.Adapter {
         this.actionModeInterface=actionModeInterface;
         SharedPreferences prefs=activity.getSharedPreferences(PREF_NAME,Context.MODE_PRIVATE);
         this.selfID=prefs.getString("username","");
-
     }
 
     @Override
@@ -97,11 +97,15 @@ public class ChatAdapter extends RecyclerView.Adapter {
     }
 
     private class SentMessageHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener, View.OnClickListener{
-        TextView messageText;
-        View v;
+        LinearLayout rightReplyLayout;
+        TextView messageText,rightReplyTextview;
+        View v,div;
 
         SentMessageHolder(View itemView) {
             super(itemView);
+            rightReplyLayout=itemView.findViewById(R.id.right_reply_layout);
+            rightReplyTextview=itemView.findViewById(R.id.right_reply_textview);
+            div=itemView.findViewById(R.id.right_reply_divider);
             messageText = (TextView) itemView.findViewById(R.id.chat_right_msg_text_view);
             v=itemView;
             itemView.setOnLongClickListener(this);
@@ -110,6 +114,12 @@ public class ChatAdapter extends RecyclerView.Adapter {
 
         void bind(ChatModel chat) {
             messageText.setText(chat.getChatMessage());
+            if(chat.getQuotedMessageId()!=null){
+                div.setVisibility(View.VISIBLE);
+                rightReplyLayout.setVisibility(View.VISIBLE);
+                if(chatModelList.indexOf(chat.getQuotedMessageId())!=-1)
+                rightReplyTextview.setText("");
+            }
             if(actionModeInterface.setSelectionColor(chat)){
                 v.setBackgroundResource(R.color.selection);
             }

@@ -31,6 +31,50 @@
     </android.support.v7.widget.RecyclerView>
 
     <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <RelativeLayout
+            android:id="@+id/token_reply_layout"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:background="@android:color/darker_gray"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="true">
+            <View
+                android:id="@+id/token_decoration_divider"
+                android:layout_width="5dp"
+                android:layout_height="match_parent"
+                android:layout_margin="8dp"
+                android:background="@color/white" />
+            <TextView
+                android:id="@+id/token_reply_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:maxLines="3"
+                android:layout_marginTop="@dimen/padding_half"
+                android:layout_marginRight="@dimen/padding_half"
+                android:layout_marginBottom="@dimen/padding_half"
+                android:layout_toRightOf="@+id/token_decoration_divider"
+                android:text="Text value to check whatsupppp"
+                android:textColor="@color/white" />
+            <ImageView
+                android:id="@+id/token_dismiss_reply"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentBottom="true"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="10dp"
+                android:layout_marginBottom="12dp"
+                app:srcCompat="@drawable/ic_clear" />
+        </RelativeLayout>
+
+    <LinearLayout
         android:elevation="4dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -56,5 +100,5 @@
             android:background="?attr/selectableItemBackground"
             app:srcCompat="@drawable/ic_send_black_24dp" />
     </LinearLayout>
-
+    </LinearLayout>
 </LinearLayout>

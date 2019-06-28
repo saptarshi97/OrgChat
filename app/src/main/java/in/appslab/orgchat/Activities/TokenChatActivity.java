@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -18,6 +19,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.Serializable;
@@ -34,6 +37,7 @@ import in.appslab.orgchat.Adapters.ChatAdapter;
 import in.appslab.orgchat.Models.ChatModel;
 import in.appslab.orgchat.Models.Data;
 import in.appslab.orgchat.Models.Message;
+import in.appslab.orgchat.Models.SendMessageResponse;
 import in.appslab.orgchat.Network.APIClient;
 import in.appslab.orgchat.R;
 import io.realm.Realm;
@@ -57,6 +61,10 @@ public class TokenChatActivity extends AppCompatActivity {
     private String destinationUserID;
     private Realm mDatabase;
     private Toolbar toolbar;
+    private String quotedTextId;
+    private RelativeLayout tokenReplyLayout;
+    private TextView tokenReplyText;
+    private ImageView tokenDismissReply;
     public static boolean isInActionMode = false;
     public static ArrayList<ChatModel> selectionList = new ArrayList<>();
 
@@ -91,6 +99,9 @@ public class TokenChatActivity extends AppCompatActivity {
         }catch (Exception e){
             e.printStackTrace();
         }
+        tokenReplyLayout= findViewById(R.id.token_reply_layout);
+        tokenReplyText=findViewById(R.id.token_reply_text);
+        tokenDismissReply=findViewById(R.id.token_dismiss_reply);
         rv=findViewById(R.id.topic_chat_rv);
         inputEditText=findViewById(R.id.topic_input);
         send=findViewById(R.id.topic_send);
@@ -159,6 +170,12 @@ public class TokenChatActivity extends AppCompatActivity {
         linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         linearLayoutManager.setStackFromEnd(true);
         rv.setLayoutManager(linearLayoutManager);
+        tokenDismissReply.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                tokenReplyLayout.setVisibility(View.GONE);
+            }
+        });
         send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -229,15 +246,23 @@ public class TokenChatActivity extends AppCompatActivity {
     }
 
     private void sendPayload(final String msg, final String time, final String selfID, final String destinationToken) {
-        //TODO Possible crash to empty topic name
         Data data = new Data(msg, time, selfID, "", 0);
+        if(tokenReplyLayout.getVisibility()==View.VISIBLE){
+            data.setQuotedMessageId(quotedTextId);
+        }
         Message message = new Message(destinationToken, data);
-        Call<Message> call = APIClient.getAPIInterface().sendMessage(legacyServerKey, message);
-        call.enqueue(new Callback<Message>() {
+        Call<SendMessageResponse> call = APIClient.getAPIInterface().sendMessage(legacyServerKey, message);
+        call.enqueue(new Callback<SendMessageResponse>() {
             @Override
-            public void onResponse(Call<Message> call, Response<Message> response) {
+            public void onResponse(Call<SendMessageResponse> call, Response<SendMessageResponse> response) {
                 if (response.isSuccessful()) {
-                    setChatObject(msg, time);
+                    String messageId=response.body().getResults().get(0).getMessageId();
+                    if(tokenReplyLayout.getVisibility()==View.VISIBLE){
+                        tokenReplyLayout.setVisibility(View.GONE);
+                        setChatObject(msg, time,messageId,quotedTextId);
+                    }else{
+                        setChatObject(msg, time,messageId,null);
+                    }
                     Log.d(TAG, "onResponse: Successfully sent message");
                     Log.d(TAG, "onResponse: sent to: " + destinationToken);
                 } else {
@@ -246,13 +271,13 @@ public class TokenChatActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<Message> call, Throwable t) {
+            public void onFailure(Call<SendMessageResponse> call, Throwable t) {
                 Log.d(TAG, "onFailure: error");
             }
         });
     }
 
-    private void setChatObject(String message, String time) {
+    private void setChatObject(String message, String time, String messageId, @Nullable String quotedTextId) {
         mDatabase.beginTransaction();
         mDatabase.where(ChatModel.class)
                 .equalTo("isTopic", 0)
@@ -264,6 +289,10 @@ public class TokenChatActivity extends AppCompatActivity {
                 .equalTo("receiver", selfID).findAll().deleteAllFromRealm();
 
         ChatModel chatModelObject = new ChatModel(message, time, selfID, destinationUserID, "", 0);
+        chatModelObject.setMessageId(messageId);
+        if(quotedTextId!=null){
+            chatModelObject.setQuotedMessageId(quotedTextId);
+        }
         chatModelList.add(chatModelObject);
         Log.d(TAG, "setChatObject: "+chatModelList.size());
         mDatabase.insert(chatModelList);
@@ -305,6 +334,8 @@ public class TokenChatActivity extends AppCompatActivity {
             toolbar.getMenu().getItem(0).setVisible(true);
         } else {
             toolbar.getMenu().getItem(0).setVisible(false);
+            if(tokenReplyLayout.getVisibility()==View.VISIBLE)
+                tokenReplyLayout.setVisibility(View.GONE);
         }
 
         toolbar.setTitle(counter);
@@ -338,6 +369,7 @@ public class TokenChatActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()){
             case R.id.reply_action:
+                setReply(selectionList.get(0));
                 clearActionMode();
                 return true;
             case R.id.copy_action:
@@ -357,6 +389,13 @@ public class TokenChatActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
+
+    private void setReply(ChatModel chatModel) {
+        tokenReplyLayout.setVisibility(View.VISIBLE);
+        quotedTextId=chatModel.getMessageId();
+        tokenReplyText.setText(chatModel.getChatMessage());
+    }
+
 
     private void forwardMessage(ArrayList<ChatModel> selectionList) {
         startActivity(new Intent(this,RecipientListActivity.class).putExtra("list",(Serializable)selectionList));

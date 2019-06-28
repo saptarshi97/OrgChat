@@ -67,11 +67,30 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                                                       realm.where(ChatModel.class).findAll();
                                                       List<ChatModel> chatModelList=new ArrayList<>();
                                                       if(remoteMessage.getData().get("isTopic").equals("0")) {
-                                                          chatModelList.add(new ChatModel(remoteMessage.getData().get("message"), remoteMessage.getData().get("time"), remoteMessage.getData().get("senderID"), selfID, "", 0));
+                                                          ChatModel obj=new ChatModel(remoteMessage.getData().get("message"), remoteMessage.getData().get("time"), remoteMessage.getData().get("senderID"), selfID, "", 0);
+                                                          obj.setMessageId(remoteMessage.getMessageId());
+                                                          try {
+                                                              if(remoteMessage.getData().get("quotedMessageId") != null && !remoteMessage.getData().get("quotedMessageId").isEmpty()) {
+                                                                  obj.setQuotedMessageId(remoteMessage.getData().get("quotedMessageId"));
+                                                              }
+                                                          }catch (Exception e){
+                                                              e.printStackTrace();
+                                                          }
+                                                          chatModelList.add(obj);
                                                           Log.d(TAG, "execute: message from: "+remoteMessage.getData().get("senderID"));
                                                       }
-                                                      else
-                                                          chatModelList.add(new ChatModel(remoteMessage.getData().get("message"), remoteMessage.getData().get("time"), remoteMessage.getData().get("senderID"),selfID,remoteMessage.getData().get("topicName"),1));
+                                                      else{
+                                                          ChatModel obj=new ChatModel(remoteMessage.getData().get("message"), remoteMessage.getData().get("time"), remoteMessage.getData().get("senderID"),selfID,remoteMessage.getData().get("topicName"),1);
+                                                          obj.setMessageId(remoteMessage.getMessageId());
+                                                          try {
+                                                              if (remoteMessage.getData().get("quotedMessageId") != null && !remoteMessage.getData().get("quotedMessageId").isEmpty()) {
+                                                                  obj.setQuotedMessageId(remoteMessage.getData().get("quotedMessageId"));
+                                                              }
+                                                          }catch (Exception e){
+                                                              e.printStackTrace();
+                                                          }
+                                                          chatModelList.add(obj);
+                                                      }
                                                       realm.insert(chatModelList);
                                                   }
                                               },

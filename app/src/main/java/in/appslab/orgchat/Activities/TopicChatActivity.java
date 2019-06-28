@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -18,6 +19,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.Serializable;
@@ -34,6 +37,7 @@ import in.appslab.orgchat.Adapters.ChatAdapter;
 import in.appslab.orgchat.Models.ChatModel;
 import in.appslab.orgchat.Models.Data;
 import in.appslab.orgchat.Models.Message;
+import in.appslab.orgchat.Models.SendTopicMessageResponse;
 import in.appslab.orgchat.Network.APIClient;
 import in.appslab.orgchat.R;
 import io.realm.Realm;
@@ -56,8 +60,12 @@ public class TopicChatActivity extends AppCompatActivity {
     private String legacyServerKey="key=AIzaSyCJsQ88WD_mqV0XYw9brGS9RJfOhXyOiKU";
     private String fragmentTitle;
     private Realm mDatabase;
+    private RelativeLayout topicReplyLayout;
+    private TextView topicReplyText;
+    private ImageView topicDismissReply;
     public static boolean isInActionMode = false;
     public static ArrayList<ChatModel> selectionList = new ArrayList<>();
+    private String quotedTextId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -190,6 +198,12 @@ public class TopicChatActivity extends AppCompatActivity {
         linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         rv.setLayoutManager(linearLayoutManager);
         rv.scrollToPosition(adapter.getItemCount()-1);
+        topicDismissReply.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                topicReplyLayout.setVisibility(View.GONE);
+            }
+        });
         send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -217,19 +231,35 @@ public class TopicChatActivity extends AppCompatActivity {
         rv=findViewById(R.id.topic_chat_rv);
         inputEditText=findViewById(R.id.topic_input);
         send=findViewById(R.id.topic_send);
+        topicReplyLayout=findViewById(R.id.topic_reply_layout);
+        topicReplyText=findViewById(R.id.topic_reply_text);
+        topicDismissReply=findViewById(R.id.topic_dismiss_reply);
         init();
         initReceiver();
     }
 
     private void sendPayload(final String msg, final  String time,final String selfID,final String destinationTopic) {
         Data data=new Data(msg,time,selfID,destinationTopic,1);
-        Message message=new Message("/topics/"+destinationTopic,data);
-        Call<Message> call= APIClient.getAPIInterface().sendMessage(legacyServerKey, message);
-        call.enqueue(new Callback<Message>() {
+        if(topicReplyLayout.getVisibility()==View.VISIBLE){
+            data.setQuotedMessageId(quotedTextId);
+        }
+        final Message message=new Message("/topics/"+destinationTopic,data);
+        Call<SendTopicMessageResponse> call= APIClient.getAPIInterface().sendTopicMessage(legacyServerKey, message);
+        call.enqueue(new Callback<SendTopicMessageResponse>() {
             @Override
-            public void onResponse(Call<Message> call, Response<Message> response) {
+            public void onResponse(Call<SendTopicMessageResponse> call, Response<SendTopicMessageResponse> response) {
                 if(response.isSuccessful()) {
-                    setChatObject(msg,time,destinationTopic);
+                    try {
+                        String messageId = response.body().getMessageId();
+                        if(topicReplyLayout.getVisibility()==View.VISIBLE){
+                            topicReplyLayout.setVisibility(View.GONE);
+                            setChatObject(msg, time,destinationTopic,messageId,quotedTextId);
+                        }else {
+                            setChatObject(msg, time, destinationTopic,messageId,null);
+                        }
+                    }catch (Exception e){
+                        Log.d(TAG, "onResponse: Error"+e.getLocalizedMessage());
+                    }
                     Log.d(TAG, "onResponse: Successfully sent message to: "+destinationTopic);
                 }
                 else {
@@ -237,13 +267,13 @@ public class TopicChatActivity extends AppCompatActivity {
                 }
             }
             @Override
-            public void onFailure(Call<Message> call, Throwable t) {
+            public void onFailure(Call<SendTopicMessageResponse> call, Throwable t) {
                 Log.d(TAG, "onFailure: error");
             }
         });
     }
 
-    private void setChatObject(String message, String time, String topicName) {
+    private void setChatObject(String message, String time, String topicName, String messageId, @Nullable String quotedTextId) {
         mDatabase.beginTransaction();
         mDatabase.where(ChatModel.class)
                 .equalTo("isTopic", 1)
@@ -254,6 +284,10 @@ public class TopicChatActivity extends AppCompatActivity {
                 .equalTo("topicName",topic)
                 .equalTo("sender", selfID).findAll().deleteAllFromRealm();
         ChatModel chatModelObject = new ChatModel(message, time, selfID, topicName, topicName, 1);
+        chatModelObject.setMessageId(messageId);
+        if(quotedTextId!=null){
+            chatModelObject.setQuotedMessageId(quotedTextId);
+        }
         chatModelList.add(chatModelObject);
         Log.d(TAG, "setChatObject: "+chatModelList.size());
         mDatabase.insert(chatModelList);
@@ -329,6 +363,7 @@ public class TopicChatActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()){
             case R.id.reply_action:
+                setReply(selectionList.get(0));
                 clearActionMode();
                 return true;
             case R.id.copy_action:
@@ -347,6 +382,12 @@ public class TopicChatActivity extends AppCompatActivity {
                 adapter.notifyDataSetChanged();
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void setReply(ChatModel chatModel) {
+        topicReplyLayout.setVisibility(View.VISIBLE);
+        quotedTextId=chatModel.getMessageId();
+        topicReplyText.setText(chatModel.getChatMessage());
     }
 
     private void forwardMessage(ArrayList<ChatModel> selectionList) {

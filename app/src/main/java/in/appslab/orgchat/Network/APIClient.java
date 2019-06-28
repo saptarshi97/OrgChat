@@ -1,6 +1,8 @@
 package in.appslab.orgchat.Network;
 
 import in.appslab.orgchat.Models.Message;
+import in.appslab.orgchat.Models.SendMessageResponse;
+import in.appslab.orgchat.Models.SendTopicMessageResponse;
 import retrofit2.Call;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
@@ -29,6 +31,9 @@ public class APIClient {
 
     public interface APIInterface{
         @POST("/fcm/send")
-        Call<Message> sendMessage(@Header("Authorization") String legacyServerKey, @Body Message message);
+        Call<SendMessageResponse> sendMessage(@Header("Authorization") String legacyServerKey, @Body Message message);
+
+        @POST("/fcm/send")
+        Call<SendTopicMessageResponse> sendTopicMessage(@Header("Authorization") String legacyServerKey, @Body Message message);
     }
 }

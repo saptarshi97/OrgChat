@@ -1,5 +1,7 @@
 package in.appslab.orgchat.Models;
 
+import android.support.annotation.Nullable;
+
 import java.io.Serializable;
 
 import io.realm.RealmObject;
@@ -8,6 +10,9 @@ import io.realm.RealmObject;
  * Created by Saptarshi on 6/3/2019.
  */
 public class ChatModel extends RealmObject implements Serializable {
+    private String messageId;
+    @Nullable
+    private String quotedMessageId;
     private String chatMessage;
     private String timestamp;
     private String sender;
@@ -26,6 +31,23 @@ public class ChatModel extends RealmObject implements Serializable {
         this.receiver = receiver;
         this.topicName = topicName;
         this.isTopic = isTopic;
+    }
+
+    @Nullable
+    public String getQuotedMessageId() {
+        return quotedMessageId;
+    }
+
+    public void setQuotedMessageId(@Nullable String quotedMessageId) {
+        this.quotedMessageId = quotedMessageId;
+    }
+
+    public String getMessageId() {
+        return messageId;
+    }
+
+    public void setMessageId(String messageId) {
+        this.messageId = messageId;
     }
 
     public String getChatMessage() {
