@@ -52,12 +52,13 @@ public class MainActivity extends AppCompatActivity {
     private ViewPager viewPager;
     private ChatPagerAdapter adapter;
     private FloatingActionButton fab;
-    SharedPreferences prefs=getSharedPreferences(PREF_NAME,MODE_PRIVATE);
+    SharedPreferences prefs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        prefs=getSharedPreferences(PREF_NAME,MODE_PRIVATE);
         init();
 
         if (prefs.getInt("updateAvailable", 0) == 1)
@@ -106,6 +107,9 @@ public class MainActivity extends AppCompatActivity {
         db=FirebaseFirestore.getInstance();
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        String nameOfUser=prefs.getString("name","");
+        if(getSupportActionBar()!=null)
+            getSupportActionBar().setTitle(nameOfUser);
 
         userID = prefs.getString("username", "");
         token = prefs.getString("registration token", "");

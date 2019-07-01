@@ -50,9 +50,9 @@ public class TokenChatActivity extends AppCompatActivity {
     private EditText inputEditText;
     private ImageView send;
     private ChatAdapter adapter;
-    private List<ChatModel> chatModelList = new ArrayList<>();
+    private List<ChatModel> chatModelList;
     BroadcastReceiver receiver;
-    private static final String TAG = "TokenChatFragment";
+    private static final String TAG = "TokenChatActivity";
     public static String PREF_NAME = "shared values";
     private String legacyServerKey = "key=AIzaSyCJsQ88WD_mqV0XYw9brGS9RJfOhXyOiKU";
     private String testDestinationToken;
@@ -66,7 +66,7 @@ public class TokenChatActivity extends AppCompatActivity {
     private TextView tokenReplyText;
     private ImageView tokenDismissReply;
     public static boolean isInActionMode = false;
-    public static ArrayList<ChatModel> selectionList = new ArrayList<>();
+    public static ArrayList<ChatModel> selectionList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +76,8 @@ public class TokenChatActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
         mDatabase = Realm.getDefaultInstance();
+        selectionList = new ArrayList<>();
+        chatModelList = new ArrayList<>();
         Bundle mBundle=getIntent().getExtras();
         testDestinationToken = mBundle.getString("registrationToken");
         nameOfUser = mBundle.getString("name");
@@ -86,8 +88,7 @@ public class TokenChatActivity extends AppCompatActivity {
         initViews();
         Log.d(TAG, "onCreate: self ID " + selfID);
         Log.d(TAG, "onCreate: destination token: " + testDestinationToken);
-        init();
-        initReceiver();
+
     }
 
     private void initViews(){  // Method for initializing the views
@@ -95,16 +96,18 @@ public class TokenChatActivity extends AppCompatActivity {
         try {
             setSupportActionBar(toolbar);
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            toolbar.setTitle(nameOfUser);
+            getSupportActionBar().setTitle(nameOfUser);
         }catch (Exception e){
             e.printStackTrace();
         }
         tokenReplyLayout= findViewById(R.id.token_reply_layout);
         tokenReplyText=findViewById(R.id.token_reply_text);
         tokenDismissReply=findViewById(R.id.token_dismiss_reply);
-        rv=findViewById(R.id.topic_chat_rv);
-        inputEditText=findViewById(R.id.topic_input);
-        send=findViewById(R.id.topic_send);
+        rv=findViewById(R.id.token_chat_rv);
+        inputEditText=findViewById(R.id.token_input_edit_text);
+        send=findViewById(R.id.token_send_icon);
+        init();
+        initReceiver();
     }
 
     private void init() {
@@ -262,23 +265,29 @@ public class TokenChatActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<SendMessageResponse> call, Response<SendMessageResponse> response) {
                 if (response.isSuccessful()) {
-                    String messageId=response.body().getResults().get(0).getMessageId();
-                    if(tokenReplyLayout.getVisibility()==View.VISIBLE){
-                        tokenReplyLayout.setVisibility(View.GONE);
-                        setChatObject(msg, time,messageId,quotedTextId);
-                    }else{
-                        setChatObject(msg, time,messageId,null);
+                    try {
+                        String messageId = response.body().getResults().get(0).getMessageId();
+                        if (tokenReplyLayout.getVisibility() == View.VISIBLE) {
+                            tokenReplyLayout.setVisibility(View.GONE);
+
+                            setChatObject(msg, time, messageId, quotedTextId);
+                        } else {
+                            setChatObject(msg, time, messageId, null);
+                        }
+                        Log.d(TAG, "onResponse: Successfully sent message, and id is: "+messageId+" isSuccess? "+response.body().getSuccess()+"isFailure?"+response.body().getFailure());
+                        Log.d(TAG, "onResponse: sent to: " + destinationToken);
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                    Log.d(TAG, "onResponse: Successfully sent message");
-                    Log.d(TAG, "onResponse: sent to: " + destinationToken);
-                } else {
+                }
+                else{
                     Log.d(TAG, "onResponse: Error sending message");
                 }
             }
 
             @Override
             public void onFailure(Call<SendMessageResponse> call, Throwable t) {
-                Log.d(TAG, "onFailure: error");
+                Log.d(TAG, "onFailure: error "+t.getLocalizedMessage());
             }
         });
     }
@@ -344,7 +353,7 @@ public class TokenChatActivity extends AppCompatActivity {
                 tokenReplyLayout.setVisibility(View.GONE);
         }
 
-        toolbar.setTitle(counter);
+        toolbar.setTitle(""+counter);
     }
 
     public void clearActionMode() {
@@ -357,6 +366,7 @@ public class TokenChatActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         }
+        adapter.notifyDataSetChanged();
         toolbar.setTitle(nameOfUser);
         selectionList.clear();
     }
@@ -399,6 +409,7 @@ public class TokenChatActivity extends AppCompatActivity {
     private void setReply(ChatModel chatModel) {
         tokenReplyLayout.setVisibility(View.VISIBLE);
         quotedTextId=chatModel.getMessageId();
+        Log.d(TAG, "setReply: "+quotedTextId+"\nname:"+chatModel.getChatMessage());
         tokenReplyText.setText(chatModel.getChatMessage());
     }
 

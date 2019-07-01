@@ -34,6 +34,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private LocalBroadcastManager broadcaster;
     private String selfID;
     private final String LAUNCH_APPLICATION = "Launch Chat";
+    private boolean sendNotificationFlag=true;
 
     @Override
     public void onCreate() {
@@ -67,6 +68,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                                                       realm.where(ChatModel.class).findAll();
                                                       List<ChatModel> chatModelList=new ArrayList<>();
                                                       if(remoteMessage.getData().get("isTopic").equals("0")) {
+                                                          sendNotificationFlag=true;
                                                           ChatModel obj=new ChatModel(remoteMessage.getData().get("message"), remoteMessage.getData().get("time"), remoteMessage.getData().get("senderID"), selfID, "", 0);
                                                           obj.setMessageId(remoteMessage.getMessageId());
                                                           try {
@@ -80,16 +82,21 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                                                           Log.d(TAG, "execute: message from: "+remoteMessage.getData().get("senderID"));
                                                       }
                                                       else{
-                                                          ChatModel obj=new ChatModel(remoteMessage.getData().get("message"), remoteMessage.getData().get("time"), remoteMessage.getData().get("senderID"),selfID,remoteMessage.getData().get("topicName"),1);
-                                                          obj.setMessageId(remoteMessage.getMessageId());
-                                                          try {
-                                                              if (remoteMessage.getData().get("quotedMessageId") != null && !remoteMessage.getData().get("quotedMessageId").isEmpty()) {
-                                                                  obj.setQuotedMessageId(remoteMessage.getData().get("quotedMessageId"));
+                                                          if (!remoteMessage.getData().get("senderID").equals(selfID)) {
+                                                              sendNotificationFlag=true;
+                                                              ChatModel obj = new ChatModel(remoteMessage.getData().get("message"), remoteMessage.getData().get("time"), remoteMessage.getData().get("senderID"), selfID, remoteMessage.getData().get("topicName"), 1);
+                                                              obj.setMessageId(remoteMessage.getMessageId());
+                                                              try {
+                                                                  if (remoteMessage.getData().get("quotedMessageId") != null && !remoteMessage.getData().get("quotedMessageId").isEmpty()) {
+                                                                      obj.setQuotedMessageId(remoteMessage.getData().get("quotedMessageId"));
+                                                                  }
+                                                              } catch (Exception e) {
+                                                                  e.printStackTrace();
                                                               }
-                                                          }catch (Exception e){
-                                                              e.printStackTrace();
+                                                              chatModelList.add(obj);
+                                                          }else{
+                                                              sendNotificationFlag=false;
                                                           }
-                                                          chatModelList.add(obj);
                                                       }
                                                       realm.insert(chatModelList);
                                                   }
@@ -101,7 +108,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                                 intent.putExtra("newDataAvailable",1);
                                 broadcaster.sendBroadcast(intent);
                                 realm.close();
-                                sendNotification(remoteMessage.getData().get("message"));
+                                if(sendNotificationFlag)
+                                    sendNotification(remoteMessage.getData().get("message"));
                             }
                         }, new Realm.Transaction.OnError() {
                             @Override

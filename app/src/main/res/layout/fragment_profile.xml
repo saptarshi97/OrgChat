@@ -20,7 +20,7 @@
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:srcCompat="@drawable/ic_profile"
+            app:srcCompat="@drawable/ic_profile_dark"
             android:alpha="0.54"/>
 
         <TextView

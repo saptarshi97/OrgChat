@@ -70,6 +70,10 @@ public class LoginActivity extends AppCompatActivity {
         if(user!=null){
             startActivity(new Intent(LoginActivity.this, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK).putExtra("isNewUser",false));
         }
+        SharedPreferences prefs=getSharedPreferences(PREF_NAME,MODE_PRIVATE);
+        if(prefs.getString("loggedin","no").equals("yes")){
+            startActivity(new Intent(LoginActivity.this, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK).putExtra("isNewUser",false));
+        }
         initViews();
     }
 
@@ -138,8 +142,23 @@ public class LoginActivity extends AppCompatActivity {
 
     public void sendCode(View view){
         Log.d(TAG, "sendCode: Inside");
-        String pNumber=phoneNumber.getText().toString();
-        Log.d(TAG, "sendCode: "+pNumber);
+        final String pNumber=phoneNumber.getText().toString();
+        final String password=vCode.getText().toString();
+        db.collection("Users").document(pNumber).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                if(task.isSuccessful() && task.getResult()!=null){
+                    DocumentSnapshot docSnap=task.getResult();
+                    if(docSnap.exists()){
+                        if(docSnap.get("password").toString().equals(password)) {
+                           currentUserID=pNumber;
+                           showAlert(true,R.drawable.ic_done,"Login successful");
+                        }
+                    }
+                }
+            }
+        });
+        /*Log.d(TAG, "sendCode: "+pNumber);
         setUpVerificationCallbacks();
         setDialog("Requesting OTP");
         PhoneAuthProvider.getInstance().verifyPhoneNumber(
@@ -147,7 +166,7 @@ public class LoginActivity extends AppCompatActivity {
                 60,                 // Timeout duration
                 TimeUnit.SECONDS,   // Unit of timeout
                 this,               // Activity (for callback binding)
-                verificationCallbacks);
+                verificationCallbacks);*/
 
     }
 
@@ -290,6 +309,7 @@ public class LoginActivity extends AppCompatActivity {
                             checkAndStart(currentUserID);
                             SharedPreferences.Editor editor=getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit();
                             editor.putString("username",currentUserID);
+                            editor.putString("loggedin","yes");
                             editor.apply();
                         }
                     }

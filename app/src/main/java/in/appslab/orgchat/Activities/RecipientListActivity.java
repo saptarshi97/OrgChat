@@ -32,6 +32,8 @@ import in.appslab.orgchat.Models.ChatModel;
 import in.appslab.orgchat.Models.CreateTeamModel;
 import in.appslab.orgchat.Models.Data;
 import in.appslab.orgchat.Models.Message;
+import in.appslab.orgchat.Models.SendMessageResponse;
+import in.appslab.orgchat.Models.SendTopicMessageResponse;
 import in.appslab.orgchat.Network.APIClient;
 import in.appslab.orgchat.R;
 import io.realm.Realm;
@@ -41,14 +43,14 @@ import retrofit2.Response;
 
 public class RecipientListActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
-    private List<CreateTeamModel> list=new ArrayList<>();
-    private List<CreateTeamModel> adminsList=new ArrayList<>();
+    private List<CreateTeamModel> list;
+    private List<CreateTeamModel> adminsList;
     private MultiSelectAdapter adapter;
     private FloatingActionButton fab;
     public static String TAG=RecipientListActivity.class.getSimpleName();
     public static String PREF_NAME="shared values";
     private String userID,company;
-    private  SharedPreferences prefs=getSharedPreferences(PREF_NAME,MODE_PRIVATE);
+    private  SharedPreferences prefs;
     private FirebaseFirestore db;
     private Realm mDatabase;
     private List<ChatModel> forwardedChats;
@@ -58,22 +60,25 @@ public class RecipientListActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recipient_list);
+        prefs=getSharedPreferences(PREF_NAME,MODE_PRIVATE);
+        list=new ArrayList<>();
+        adminsList=new ArrayList<>();
         forwardedChats=(List<ChatModel>)getIntent().getSerializableExtra("list");
         init();
     }
 
     private void init() {
         mDatabase=Realm.getDefaultInstance();
+        db=FirebaseFirestore.getInstance();
+        userID=prefs.getString("username","");
+        company=prefs.getString("organization","");
+        fab=findViewById(R.id.fab_forward_messages);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 forwardMessages(adapter.getSelected());
             }
         });
-        db=FirebaseFirestore.getInstance();
-        userID=prefs.getString("username","");
-        company=prefs.getString("organization","");
-        fab=findViewById(R.id.fab_forward_messages);
         recyclerView=findViewById(R.id.recipient_rv);
         MultiSelectAdapter.ModifyActivityViewVisibility inter = new MultiSelectAdapter.ModifyActivityViewVisibility() {
             @Override
@@ -115,39 +120,65 @@ public class RecipientListActivity extends AppCompatActivity {
             Data data = new Data(msg, time, selfID, "", isTopic);
             message.setTo(destination);
             message.setData(data);
+            Call<SendMessageResponse> call = APIClient.getAPIInterface().sendMessage(legacyServerKey, message);
+            call.enqueue(new Callback<SendMessageResponse>() {
+                @Override
+                public void onResponse(Call<SendMessageResponse> call, Response<SendMessageResponse> response) {
+                    if (response.isSuccessful()) {
+                        try {
+                            String messageId = response.body().getResults().get(0).getMessageId();
+                            setChatObject(msg, time, selfID, destination, isTopic, messageId);
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+                    } else {
+                        Log.d(TAG, "onResponse: Error sending message");
+                    }
+                }
+                @Override
+                public void onFailure(Call<SendMessageResponse> call, Throwable t) {
+                    Log.d(TAG, "onFailure: error");
+                }
+            });
         }else{
             Data data=new Data(msg,time,selfID,destination,isTopic);
             message.setTo("/topics/"+destination);
             message.setData(data);
-        }
-        Call<Message> call = APIClient.getAPIInterface().sendMessage(legacyServerKey, message);
-        call.enqueue(new Callback<Message>() {
-            @Override
-            public void onResponse(Call<Message> call, Response<Message> response) {
-                if (response.isSuccessful()) {
-                    setChatObject(msg, time,selfID,destination,isTopic);
-                    Log.d(TAG, "onResponse: Successfully sent message");
-                    Log.d(TAG, "onResponse: sent to: " + destination);
-                } else {
-                    Log.d(TAG, "onResponse: Error sending message");
+            Call<SendTopicMessageResponse> call= APIClient.getAPIInterface().sendTopicMessage(legacyServerKey, message);
+            call.enqueue(new Callback<SendTopicMessageResponse>() {
+                @Override
+                public void onResponse(Call<SendTopicMessageResponse> call, Response<SendTopicMessageResponse> response) {
+                    if(response.isSuccessful()) {
+                        try {
+                            String messageId = response.body().getMessageId();
+                            setChatObject(msg, time,selfID,destination,isTopic,messageId);
+                        }catch (Exception e){
+                            Log.d(TAG, "onResponse: Error"+e.getLocalizedMessage());
+                        }
+                        Log.d(TAG, "onResponse: Successfully sent message to: "+destination);
+                    }
+                    else {
+                        Log.d(TAG, "onResponse: Error sending message");
+                    }
                 }
-            }
-
-            @Override
-            public void onFailure(Call<Message> call, Throwable t) {
-                Log.d(TAG, "onFailure: error");
-            }
-        });
+                @Override
+                public void onFailure(Call<SendTopicMessageResponse> call, Throwable t) {
+                    Log.d(TAG, "onFailure: error");
+                }
+            });
+        }
     }
 
-    private void setChatObject(String msg, String time, String selfID, String destination, int isTopic) {
+    private void setChatObject(String msg, String time, String selfID, String destination, int isTopic, String messageId) {
         List<ChatModel> chatModelList = new ArrayList<>();
         mDatabase.beginTransaction();
         if(isTopic==0){
             ChatModel chatModelObject = new ChatModel(msg, time, selfID, destination, "", isTopic);
+            chatModelObject.setMessageId(messageId);
             chatModelList.add(chatModelObject);
         }else{
             ChatModel chatModelObject = new ChatModel(msg, time, selfID, destination, destination, isTopic);
+            chatModelObject.setMessageId(messageId);
             chatModelList.add(chatModelObject);
         }
         mDatabase.insert(chatModelList);

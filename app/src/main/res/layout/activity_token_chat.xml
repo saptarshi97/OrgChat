@@ -81,14 +81,14 @@
         android:orientation="horizontal"
         android:background="@color/white">
         <EditText
-            android:id="@+id/input_edit_text"
+            android:id="@+id/token_input_edit_text"
             android:layout_margin="8dp"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:hint="Send message"
             android:layout_height="wrap_content" />
         <ImageView
-            android:id="@+id/send_icon"
+            android:id="@+id/token_send_icon"
             android:layout_marginRight="8dp"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"

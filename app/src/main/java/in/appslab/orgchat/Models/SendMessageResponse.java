@@ -12,38 +12,38 @@ import java.util.List;
 
     @SerializedName("multicast_id")
     @Expose
-    private Integer multicastId;
+    private String multicastId;
     @SerializedName("success")
     @Expose
-    private Integer success;
+    private String success;
     @SerializedName("failure")
     @Expose
-    private Integer failure;
+    private String failure;
     @SerializedName("results")
     @Expose
     private List<FirebaseSendMessageResult> results = null;
 
-    public Integer getMulticastId() {
+    public String getMulticastId() {
         return multicastId;
     }
 
-    public void setMulticastId(Integer multicastId) {
+    public void setMulticastId(String multicastId) {
         this.multicastId = multicastId;
     }
 
-    public Integer getSuccess() {
+    public String getSuccess() {
         return success;
     }
 
-    public void setSuccess(Integer success) {
+    public void setSuccess(String success) {
         this.success = success;
     }
 
-    public Integer getFailure() {
+    public String getFailure() {
         return failure;
     }
 
-    public void setFailure(Integer failure) {
+    public void setFailure(String failure) {
         this.failure = failure;
     }
 

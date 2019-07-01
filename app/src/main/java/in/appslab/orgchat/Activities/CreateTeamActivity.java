@@ -35,22 +35,31 @@ import in.appslab.orgchat.R;
 
 public class CreateTeamActivity extends AppCompatActivity {
     public static String PREF_NAME="shared values";
+    private static String TAG=CreateTeamActivity.class.getSimpleName();
     private FloatingActionButton fab;
     private EditText teamNameEditText;
     private RecyclerView teamSelectRV;
     private MultiSelectAdapter adapter;
-    private List<CreateTeamModel>members=new ArrayList<>();
+    private List<CreateTeamModel>members;
     FirebaseFirestore db;
-    List<String> leads=new ArrayList<>();
-    SharedPreferences prefs=getSharedPreferences(PREF_NAME,MODE_PRIVATE);
+    List<String> leads;
+    SharedPreferences prefs;
     private String orgID,orgName,parentTeam;
-    Map<String, Object> data = new HashMap<>();
+    Map<String, Object> data;
     private Activity activity=this;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_team);
+        if (getSupportActionBar()!=null) {
+            getSupportActionBar().setTitle("Create Team");
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
+        members=new ArrayList<>();
+        leads=new ArrayList<>();
+        data= new HashMap<>();
+        prefs=getSharedPreferences(PREF_NAME,MODE_PRIVATE);
         init();
         getMembersFromDB();
         fab.setOnClickListener(new View.OnClickListener() {
@@ -75,8 +84,10 @@ public class CreateTeamActivity extends AppCompatActivity {
             @Override
             public void onComplete(@NonNull Task<QuerySnapshot> task) {
                 if(task.isSuccessful() && task.getResult()!=null){
-                    for(DocumentSnapshot documentSnapshot: task.getResult())
-                        parentTeam=documentSnapshot.getId();
+                    for(DocumentSnapshot documentSnapshot: task.getResult()) {
+                        parentTeam = documentSnapshot.getId();
+                        Log.d(TAG, "onComplete: " +parentTeam);
+                    }
                 }
                 data.put("parent_team",parentTeam);
             }
@@ -106,7 +117,8 @@ public class CreateTeamActivity extends AppCompatActivity {
     }
 
     private void getMembersFromDB() {
-        db.collection("teams").whereEqualTo("organizationID",orgID).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+        Query query=db.collection("teams").whereEqualTo("organizationID",orgID);
+        query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
             @Override
             public void onComplete(@NonNull Task<QuerySnapshot> task) {
                 if(task.isSuccessful()){
@@ -140,6 +152,7 @@ public class CreateTeamActivity extends AppCompatActivity {
     }
 
     private void init() {
+        db=FirebaseFirestore.getInstance();
         orgID=prefs.getString("organizationID","NA");
         orgName=prefs.getString("organization","NA");
         teamSelectRV=findViewById(R.id.team_selection_recyclerview);

@@ -50,7 +50,7 @@ public class ChatFragment extends Fragment {
     private static final String TAG = "CompanyUsersFragment";
     UsersOfCompanyAdapter adapter;
     FirebaseFirestore db;
-    SharedPreferences prefs=getActivity().getSharedPreferences(PREF_NAME,MODE_PRIVATE);
+    SharedPreferences prefs;
     boolean isLead=false;
     private LinearLayout rootLayout;
     public ChatFragment() {
@@ -67,6 +67,7 @@ public class ChatFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+        prefs=getActivity().getSharedPreferences(PREF_NAME,MODE_PRIVATE);
     }
 
     @Override
@@ -132,7 +133,7 @@ public class ChatFragment extends Fragment {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode==2){
-            loadTeamsForUser(userID,company);
+            //loadTeamsForUser(userID,company);
         }else{
             Snackbar.make(rootLayout,"Unable to create team, try again",Snackbar.LENGTH_SHORT).show();
         }
@@ -260,7 +261,10 @@ public class ChatFragment extends Fragment {
     }
 
     private void logout() {
-        FirebaseAuth.getInstance().signOut();
+        /*FirebaseAuth.getInstance().signOut();*/
+        SharedPreferences.Editor editor = getActivity().getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit();
+        editor.putString("loggedin","no");
+        editor.apply();
         startActivity(new Intent(getActivity(),LoginActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
     }
 

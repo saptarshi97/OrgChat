@@ -43,7 +43,7 @@ public class ModifyTeamActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private ModifyTeamAdapter adapter;
     private LinearLayout deleteTeamLL;
-    private List<CreateTeamModel> list=new ArrayList<>();
+    private List<CreateTeamModel> list;
     private static String TAG=ModifyTeamActivity.class.getSimpleName();
     private String legacyServerKey="key=AIzaSyCJsQ88WD_mqV0XYw9brGS9RJfOhXyOiKU";
 
@@ -51,6 +51,7 @@ public class ModifyTeamActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_modify_team);
+        list=new ArrayList<>();
         if(getSupportActionBar()!=null){
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
@@ -170,7 +171,7 @@ public class ModifyTeamActivity extends AppCompatActivity {
     }
 
     private void loadOptionsDialog(final String userID, final String name, final String token) {
-        if(!selfID.equals(leadID))
+        if(!selfID.equals(leadID) || selfID.equals(userID))
             return;
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);

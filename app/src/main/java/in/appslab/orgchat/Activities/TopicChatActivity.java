@@ -50,7 +50,7 @@ public class TopicChatActivity extends AppCompatActivity {
     private EditText inputEditText;
     private ImageView send;
     ChatAdapter adapter;
-    private List<ChatModel> chatModelList=new ArrayList<>();
+    private List<ChatModel> chatModelList;
     BroadcastReceiver receiver;
     private String selfID;
     private String topic;
@@ -64,7 +64,7 @@ public class TopicChatActivity extends AppCompatActivity {
     private TextView topicReplyText;
     private ImageView topicDismissReply;
     public static boolean isInActionMode = false;
-    public static ArrayList<ChatModel> selectionList = new ArrayList<>();
+    public static ArrayList<ChatModel> selectionList;
     private String quotedTextId;
 
     @Override
@@ -72,6 +72,8 @@ public class TopicChatActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_topic_chat);
         SharedPreferences prefs=getSharedPreferences(PREF_NAME,Context.MODE_PRIVATE);
+        chatModelList=new ArrayList<>();
+        selectionList = new ArrayList<>();
         mDatabase = Realm.getDefaultInstance();
         Bundle mBundle=getIntent().getExtras();
         topic=mBundle.getString("topic");
@@ -230,7 +232,7 @@ public class TopicChatActivity extends AppCompatActivity {
         try {
             setSupportActionBar(toolbar);
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            toolbar.setTitle(fragmentTitle);
+            getSupportActionBar().setTitle(fragmentTitle);
         }catch (Exception e){
             e.printStackTrace();
         }
