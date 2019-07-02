@@ -142,6 +142,8 @@ public class ChatAdapter extends RecyclerView.Adapter {
             }
             if(actionModeInterface.setSelectionColor(chat)){
                 v.setBackgroundResource(R.color.selection);
+            }else{
+                v.setBackgroundResource(0);
             }
         }
 
@@ -193,6 +195,8 @@ public class ChatAdapter extends RecyclerView.Adapter {
             }
             if(actionModeInterface.setSelectionColor(chat)){
                 v.setBackgroundResource(R.color.selection);
+            }else{
+                v.setBackgroundResource(0);
             }
         }
 

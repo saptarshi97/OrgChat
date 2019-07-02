@@ -55,7 +55,7 @@ public class CreateInviteActivity extends AppCompatActivity implements AdapterVi
         init();
 
         if (getSupportActionBar()!=null) {
-            getSupportActionBar().setTitle("Profile");
+            getSupportActionBar().setTitle("Create Invite");
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
     }

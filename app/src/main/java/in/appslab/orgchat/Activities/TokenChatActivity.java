@@ -61,7 +61,7 @@ public class TokenChatActivity extends AppCompatActivity {
     private String destinationUserID;
     private Realm mDatabase;
     private Toolbar toolbar;
-    private String quotedTextId;
+    private String quotedTextId=null;
     private RelativeLayout tokenReplyLayout;
     private TextView tokenReplyText;
     private ImageView tokenDismissReply;
@@ -143,8 +143,10 @@ public class TokenChatActivity extends AppCompatActivity {
             public void onClickHandler(int position) {
                 if(isInActionMode){
                     prepareSelection(position);
+                    Log.d(TAG, "onClickHandler: position:"+position);
                     if(adapter!=null){
-                        adapter.notifyItemChanged(position);
+                        adapter.notifyDataSetChanged();
+                        //adapter.notifyItemChanged(position);
                     }
                 }
             }
@@ -183,6 +185,7 @@ public class TokenChatActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 tokenReplyLayout.setVisibility(View.GONE);
+                quotedTextId=null;
             }
         });
         send.setOnClickListener(new View.OnClickListener() {
@@ -194,8 +197,14 @@ public class TokenChatActivity extends AppCompatActivity {
                 inputEditText.setText("");
                 inputEditText.setHint("Send Message");
                 String time = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(new Date());
-
-                sendPayload(msg, time, selfID, testDestinationToken);
+                Data data = new Data(msg, time, selfID, "", 0);
+                if(tokenReplyLayout.getVisibility()==View.VISIBLE){
+                    data.setQuotedMessageId(quotedTextId);
+                }else{
+                    data.setQuotedMessageId(null);
+                }
+                sendPayload(data,msg, time, selfID, testDestinationToken);
+                quotedTextId=null;
             }
         });
     }
@@ -254,23 +263,19 @@ public class TokenChatActivity extends AppCompatActivity {
         };
     }
 
-    private void sendPayload(final String msg, final String time, final String selfID, final String destinationToken) {
-        Data data = new Data(msg, time, selfID, "", 0);
-        if(tokenReplyLayout.getVisibility()==View.VISIBLE){
-            data.setQuotedMessageId(quotedTextId);
-        }
+    private void sendPayload(Data data,final String msg, final String time, final String selfID, final String destinationToken) {
         Message message = new Message(destinationToken, data);
         Call<SendMessageResponse> call = APIClient.getAPIInterface().sendMessage(legacyServerKey, message);
         call.enqueue(new Callback<SendMessageResponse>() {
             @Override
             public void onResponse(Call<SendMessageResponse> call, Response<SendMessageResponse> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body().getSuccess().equals("1")) {
                     try {
                         String messageId = response.body().getResults().get(0).getMessageId();
                         if (tokenReplyLayout.getVisibility() == View.VISIBLE) {
                             tokenReplyLayout.setVisibility(View.GONE);
-
                             setChatObject(msg, time, messageId, quotedTextId);
+                            quotedTextId=null;
                         } else {
                             setChatObject(msg, time, messageId, null);
                         }
@@ -344,7 +349,10 @@ public class TokenChatActivity extends AppCompatActivity {
 
     private void updateViewCounter() {
         int counter = selectionList.size();
-        if (counter == 1) {
+        if(counter ==0){
+            clearActionMode();
+        }
+        else if (counter == 1) {
             // reply
             toolbar.getMenu().getItem(0).setVisible(true);
         } else {
@@ -352,23 +360,23 @@ public class TokenChatActivity extends AppCompatActivity {
             if(tokenReplyLayout.getVisibility()==View.VISIBLE)
                 tokenReplyLayout.setVisibility(View.GONE);
         }
-
-        toolbar.setTitle(""+counter);
+        if(counter>0)
+            toolbar.setTitle(""+counter);
     }
 
     public void clearActionMode() {
         isInActionMode = false;
         try {
             toolbar.getMenu().clear();
+            setSupportActionBar(toolbar);
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle(nameOfUser);
         }catch(Exception e){
             e.printStackTrace();
         }
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-        }
+        selectionList.clear();
         adapter.notifyDataSetChanged();
         toolbar.setTitle(nameOfUser);
-        selectionList.clear();
     }
 
     @Override
@@ -399,6 +407,14 @@ public class TokenChatActivity extends AppCompatActivity {
                 forwardMessage(selectionList);
                 clearActionMode();
                 return true;
+            case android.R.id.home:
+                if(isInActionMode){
+                    clearActionMode();
+                    adapter.notifyDataSetChanged();
+                }else {
+                    onBackPressed();
+                }
+                return true;
             default:
                 clearActionMode();
                 adapter.notifyDataSetChanged();
@@ -409,7 +425,6 @@ public class TokenChatActivity extends AppCompatActivity {
     private void setReply(ChatModel chatModel) {
         tokenReplyLayout.setVisibility(View.VISIBLE);
         quotedTextId=chatModel.getMessageId();
-        Log.d(TAG, "setReply: "+quotedTextId+"\nname:"+chatModel.getChatMessage());
         tokenReplyText.setText(chatModel.getChatMessage());
     }
 

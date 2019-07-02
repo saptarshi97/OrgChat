@@ -124,7 +124,7 @@ public class RecipientListActivity extends AppCompatActivity {
             call.enqueue(new Callback<SendMessageResponse>() {
                 @Override
                 public void onResponse(Call<SendMessageResponse> call, Response<SendMessageResponse> response) {
-                    if (response.isSuccessful()) {
+                    if (response.isSuccessful() && response.body().getSuccess().equals("1")) {
                         try {
                             String messageId = response.body().getResults().get(0).getMessageId();
                             setChatObject(msg, time, selfID, destination, isTopic, messageId);
@@ -148,7 +148,7 @@ public class RecipientListActivity extends AppCompatActivity {
             call.enqueue(new Callback<SendTopicMessageResponse>() {
                 @Override
                 public void onResponse(Call<SendTopicMessageResponse> call, Response<SendTopicMessageResponse> response) {
-                    if(response.isSuccessful()) {
+                    if(response.isSuccessful() && response.body().getMessageId()!=null) {
                         try {
                             String messageId = response.body().getMessageId();
                             setChatObject(msg, time,selfID,destination,isTopic,messageId);

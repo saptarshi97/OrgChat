@@ -65,43 +65,10 @@ public class MainActivity extends AppCompatActivity {
             sendTokenToDB(userID, token);
 
         getTeams(userID);
-        setFabIfLead();
     }
 
 
-    private void setFabIfLead() {   //-1 for not lead, 0 for not checked, 1 for lead for some team
-        if(prefs.getInt("isLead",0)==1) {
-            fab.show();
-        }else if(prefs.getInt("isLead",0)==0){
-            try {
-                Query query = db.collection("teams").whereEqualTo("company", company).whereEqualTo("lead_id", userID);
-                query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
-                            if (task.getResult().size() > 0) {
-                                fab.show();
-                                SharedPreferences.Editor editor = getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit();
-                                editor.putInt("isLead", 1);
-                                editor.apply();
-                            }else{
-                                fab.hide();
-                                SharedPreferences.Editor editor = getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit();
-                                editor.putInt("isLead", -1);
-                                editor.apply();
-                            }
-                        }
-                    }
-                });
-            }catch (Exception e){
-                fab.hide();
-                e.printStackTrace();
-            }
-        }
-        else{ //-1 case
-            fab.hide();
-        }
-    }
+
 
     private void init(){
         db=FirebaseFirestore.getInstance();
@@ -132,9 +99,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void sendTokenToDB(String userID, String token) {
         Map<String, Object> updates = new HashMap<>();
-        updates.put("registration token",token);
+        updates.put("token",token);
         db=FirebaseFirestore.getInstance();
-        db.collection("users")
+        db.collection("Users")
                 .document(userID)
                 .update(updates).addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override
@@ -149,10 +116,6 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, "onComplete: Task failed with exception: "+task.getException());
             }
         });
-    }
-
-    public void createInvite(View view){
-        startActivity(new Intent(this,CreateInviteActivity.class));
     }
 
     private void getTeams(String userID) {

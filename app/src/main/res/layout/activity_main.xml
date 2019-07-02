@@ -37,18 +37,4 @@
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
 
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fab_invite"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"
-        app:fabSize="normal"
-        app:srcCompat="@drawable/ic_edit"
-        android:tint="#FFFFFF"
-        android:onClick="createInvite"
-        android:visibility="gone"/>
-
 </RelativeLayout>

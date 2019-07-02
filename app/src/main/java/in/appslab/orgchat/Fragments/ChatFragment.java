@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.DividerItemDecoration;
@@ -17,6 +18,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -32,6 +34,7 @@ import com.google.firebase.firestore.QuerySnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
+import in.appslab.orgchat.Activities.CreateInviteActivity;
 import in.appslab.orgchat.Activities.CreateTeamActivity;
 import in.appslab.orgchat.Activities.LoginActivity;
 import in.appslab.orgchat.Activities.ProfileActivity;
@@ -45,14 +48,15 @@ import static android.content.Context.MODE_PRIVATE;
 public class ChatFragment extends Fragment {
     public static String PREF_NAME="shared values";
     List<UsersOfCompanyModel> list;
-    String userID,company;
+    String userID,company,companyID;
     List<UsersOfCompanyModel> adminsList;
     private static final String TAG = "CompanyUsersFragment";
+    private FloatingActionButton fab;
     UsersOfCompanyAdapter adapter;
     FirebaseFirestore db;
     SharedPreferences prefs;
     boolean isLead=false;
-    private LinearLayout rootLayout;
+    private RelativeLayout rootLayout;
     public ChatFragment() {
         // Required empty public constructor
     }
@@ -76,6 +80,13 @@ public class ChatFragment extends Fragment {
         // Inflate the layout for this fragment
         View view=inflater.inflate(R.layout.fragment_chat, container, false);
         rootLayout=view.findViewById(R.id.root_ll);
+        fab=view.findViewById(R.id.fab_invite);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                createInvite();
+            }
+        });
         String nameOfUser=prefs.getString("name","");
         try {
             getActivity().setTitle(nameOfUser);
@@ -85,11 +96,51 @@ public class ChatFragment extends Fragment {
         init();
         userID=prefs.getString("username","");
         company=prefs.getString("organization","");
+        companyID=prefs.getString("organizationID","");
         String myToken=prefs.getString("registration token","");
+        setFabIfLead();
         loadRecyclerView(view);
         loadCompany(userID,company);
         loadTeamsForUser(userID,company);
         return view;
+    }
+
+    private void setFabIfLead() {   //-1 for not lead, 0 for not checked, 1 for lead for some team
+        if(prefs.getInt("isLead",0)==1) {
+            fab.show();
+        }else if(prefs.getInt("isLead",0)==0){
+            try {
+                Query query = db.collection("teams").whereEqualTo("organizationID", companyID).whereEqualTo("lead_id", userID);
+                query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful()) {
+                            if (task.getResult().size() > 0) {
+                                fab.show();
+                                SharedPreferences.Editor editor = getActivity().getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit();
+                                editor.putInt("isLead", 1);
+                                editor.apply();
+                            }else{
+                                fab.hide();
+                                SharedPreferences.Editor editor = getActivity().getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit();
+                                editor.putInt("isLead", -1);
+                                editor.apply();
+                            }
+                        }
+                    }
+                });
+            }catch (Exception e){
+                fab.hide();
+                e.printStackTrace();
+            }
+        }
+        else{ //-1 case
+            fab.hide();
+        }
+    }
+
+    private void createInvite(){
+        startActivity(new Intent(getActivity(),CreateInviteActivity.class));
     }
 
     @Override

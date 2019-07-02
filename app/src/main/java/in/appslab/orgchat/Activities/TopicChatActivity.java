@@ -65,7 +65,7 @@ public class TopicChatActivity extends AppCompatActivity {
     private ImageView topicDismissReply;
     public static boolean isInActionMode = false;
     public static ArrayList<ChatModel> selectionList;
-    private String quotedTextId;
+    private String quotedTextId=null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -171,7 +171,8 @@ public class TopicChatActivity extends AppCompatActivity {
                 if(isInActionMode){
                     prepareSelection(position);
                     if(adapter!=null){
-                        adapter.notifyItemChanged(position);
+                        adapter.notifyDataSetChanged();
+                        //adapter.notifyItemChanged(position);
                     }
                 }
             }
@@ -210,6 +211,7 @@ public class TopicChatActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 topicReplyLayout.setVisibility(View.GONE);
+                quotedTextId=null;
             }
         });
         send.setOnClickListener(new View.OnClickListener() {
@@ -248,20 +250,20 @@ public class TopicChatActivity extends AppCompatActivity {
 
     private void sendPayload(final String msg, final  String time,final String selfID,final String destinationTopic) {
         Data data=new Data(msg,time,selfID,destinationTopic,1);
-        if(topicReplyLayout.getVisibility()==View.VISIBLE){
-            data.setQuotedMessageId(quotedTextId);
-        }
+        data.setQuotedMessageId(quotedTextId);
+        Log.d(TAG, "sendPayload: quoted text in Data object"+data.getQuotedMessageId());
         final Message message=new Message("/topics/"+destinationTopic,data);
         Call<SendTopicMessageResponse> call= APIClient.getAPIInterface().sendTopicMessage(legacyServerKey, message);
         call.enqueue(new Callback<SendTopicMessageResponse>() {
             @Override
             public void onResponse(Call<SendTopicMessageResponse> call, Response<SendTopicMessageResponse> response) {
-                if(response.isSuccessful()) {
+                if(response.isSuccessful() && response.body().getMessageId()!=null) {
                     try {
                         String messageId = response.body().getMessageId();
                         if(topicReplyLayout.getVisibility()==View.VISIBLE){
                             topicReplyLayout.setVisibility(View.GONE);
                             setChatObject(msg, time,destinationTopic,messageId,quotedTextId);
+                            quotedTextId=null;
                         }else {
                             setChatObject(msg, time, destinationTopic,messageId,null);
                         }
@@ -269,6 +271,7 @@ public class TopicChatActivity extends AppCompatActivity {
                         Log.d(TAG, "onResponse: Error"+e.getLocalizedMessage());
                     }
                     Log.d(TAG, "onResponse: Successfully sent message to: "+destinationTopic);
+                    Log.d(TAG, "onResponse: Successfully sent message with id: "+response.body().getMessageId());
                 }
                 else {
                     Log.d(TAG, "onResponse: Error sending message");
@@ -332,29 +335,33 @@ public class TopicChatActivity extends AppCompatActivity {
 
     private void updateViewCounter() {
         int counter = selectionList.size();
-        if (counter == 1) {
+        if(counter ==0){
+            clearActionMode();
+        }
+        else if (counter == 1) {
             // reply
             toolbar.getMenu().getItem(0).setVisible(true);
         } else {
             toolbar.getMenu().getItem(0).setVisible(false);
         }
 
-        toolbar.setTitle(counter);
+        if(counter>0)
+            toolbar.setTitle(""+counter);
     }
 
     public void clearActionMode() {
         isInActionMode = false;
         try {
             toolbar.getMenu().clear();
+            setSupportActionBar(toolbar);
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle(fragmentTitle);
         }catch(Exception e){
             e.printStackTrace();
         }
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-        }
-        toolbar.setTitle(fragmentTitle);
-        //Probable need to set click listener on toolbar again
         selectionList.clear();
+        adapter.notifyDataSetChanged();
+        toolbar.setTitle(fragmentTitle);
     }
 
     @Override
@@ -385,6 +392,14 @@ public class TopicChatActivity extends AppCompatActivity {
                 forwardMessage(selectionList);
                 clearActionMode();
                 return true;
+            case android.R.id.home:
+                if(isInActionMode){
+                    clearActionMode();
+                    adapter.notifyDataSetChanged();
+                }else {
+                    onBackPressed();
+                }
+                return true;
             default:
                 clearActionMode();
                 adapter.notifyDataSetChanged();
@@ -395,6 +410,7 @@ public class TopicChatActivity extends AppCompatActivity {
     private void setReply(ChatModel chatModel) {
         topicReplyLayout.setVisibility(View.VISIBLE);
         quotedTextId=chatModel.getMessageId();
+        Log.d(TAG, "setReply: with quotedTextID:"+quotedTextId);
         topicReplyText.setText(chatModel.getChatMessage());
     }
 
