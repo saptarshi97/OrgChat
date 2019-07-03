@@ -27,6 +27,8 @@ public class ChatAdapter extends RecyclerView.Adapter {
     private static final String TAG ="TokenChatAdapter";
     private static final int VIEW_TYPE_MESSAGE_SENT = 0;
     private static final int VIEW_TYPE_MESSAGE_RECEIVED = 1;
+    private static final int VIEW_TYPE_MESSAGE_SENT_REPLY=2;
+    private static final int VIEW_TYPE_MESSAGE_RECEIVED_REPLY=3;
     public static String PREF_NAME="shared values";
     Activity activity;
     private String selfID;
@@ -56,10 +58,16 @@ public class ChatAdapter extends RecyclerView.Adapter {
         Log.d(TAG, "getItemViewType: "+chatObj.getSender());
         Log.d(TAG, "getItemViewType: few of the data "+chatObj.getReceiver()+" "+chatObj.getTimestamp()+" "+chatObj.getChatMessage());
 
-        if(chatObj.getSender().equals(selfID))
+        if(chatObj.getSender().equals(selfID) && chatObj.getQuotedMessageId()==null)
             return  VIEW_TYPE_MESSAGE_SENT;
-        else
+        else if(!chatObj.getSender().equals(selfID) && chatObj.getQuotedMessageId()==null)
             return VIEW_TYPE_MESSAGE_RECEIVED;
+        else if(chatObj.getSender().equals(selfID) && chatObj.getQuotedMessageId()!=null)
+            return VIEW_TYPE_MESSAGE_SENT_REPLY;
+        else if(!chatObj.getSender().equals(selfID) && chatObj.getQuotedMessageId()!=null)
+            return VIEW_TYPE_MESSAGE_RECEIVED_REPLY;
+        else
+            return -1;
     }
 
     @Override
@@ -73,6 +81,14 @@ public class ChatAdapter extends RecyclerView.Adapter {
             view=LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item_chat_received,parent,false);
             return new ReceivedMessageHolder(view);
+        }else if(i==VIEW_TYPE_MESSAGE_SENT_REPLY){
+            view=LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_chat_reply_sent,parent,false);
+            return new SentReplyHolder(view);
+        }else if(i==VIEW_TYPE_MESSAGE_RECEIVED_REPLY){
+            view=LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_chat_reply_received,parent,false);
+            return new ReceivedReplyHolder(view);
         }
         return null;
     }
@@ -88,6 +104,12 @@ public class ChatAdapter extends RecyclerView.Adapter {
                 break;
             case VIEW_TYPE_MESSAGE_RECEIVED:
                 ((ReceivedMessageHolder) holder).bind(chatObj);
+                break;
+            case VIEW_TYPE_MESSAGE_SENT_REPLY:
+                ((SentReplyHolder)holder).bind(chatObj);
+                break;
+            case VIEW_TYPE_MESSAGE_RECEIVED_REPLY:
+                ((ReceivedReplyHolder)holder).bind(chatObj);
                 break;
         }
     }
@@ -109,15 +131,11 @@ public class ChatAdapter extends RecyclerView.Adapter {
     }
 
     private class SentMessageHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener, View.OnClickListener{
-        LinearLayout rightReplyLayout;
-        TextView messageText,rightReplyTextview;
-        View v,div;
+        TextView messageText;
+        View v;
 
         SentMessageHolder(View itemView) {
             super(itemView);
-            rightReplyLayout=itemView.findViewById(R.id.right_reply_layout);
-            rightReplyTextview=itemView.findViewById(R.id.right_reply_textview);
-            div=itemView.findViewById(R.id.right_reply_divider);
             messageText = (TextView) itemView.findViewById(R.id.chat_right_msg_text_view);
             v=itemView;
             itemView.setOnLongClickListener(this);
@@ -126,20 +144,6 @@ public class ChatAdapter extends RecyclerView.Adapter {
 
         void bind(ChatModel chat) {
             messageText.setText(chat.getChatMessage());
-            if(chat.getQuotedMessageId()!=null){
-                final int pos=getObjPos(chat.getQuotedMessageId());
-                if(pos!=-1) {
-                    div.setVisibility(View.VISIBLE);
-                    rightReplyLayout.setVisibility(View.VISIBLE);
-                    rightReplyTextview.setText(chatModelList.get(pos).getChatMessage());
-                    rightReplyLayout.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            actionModeInterface.replyClickHandler(pos);
-                        }
-                    });
-                }
-            }
             if(actionModeInterface.setSelectionColor(chat)){
                 v.setBackgroundResource(R.color.selection);
             }else{
@@ -160,14 +164,49 @@ public class ChatAdapter extends RecyclerView.Adapter {
     }
 
     private class ReceivedMessageHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener, View.OnClickListener{
+        TextView messageText, userIDText;
+        View v;
+
+        ReceivedMessageHolder(View itemView) {
+            super(itemView);
+            messageText = itemView.findViewById(R.id.chat_left_msg_text_view);
+            userIDText= itemView.findViewById(R.id.user_id);
+            v=itemView;
+            itemView.setOnLongClickListener(this);
+            itemView.setOnClickListener(this);
+        }
+
+        void bind(ChatModel chat) {
+            messageText.setText(chat.getChatMessage());
+            userIDText.setText(chat.getSender());
+            if(actionModeInterface.setSelectionColor(chat)){
+                v.setBackgroundResource(R.color.selection);
+            }else{
+                v.setBackgroundResource(0);
+            }
+        }
+
+        @Override
+        public boolean onLongClick(View view) {
+            actionModeInterface.onLongClickHandler(getAdapterPosition());
+            return true;
+        }
+
+        @Override
+        public void onClick(View view) {
+            actionModeInterface.onClickHandler(getAdapterPosition());
+        }
+    }
+
+    private class ReceivedReplyHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener, View.OnClickListener{
         LinearLayout leftReplyLayout;
         TextView messageText, userIDText,leftReplyTextView;
         View v,div;
 
-        ReceivedMessageHolder(View itemView) {
+        ReceivedReplyHolder(View itemView){
             super(itemView);
-            messageText = (TextView) itemView.findViewById(R.id.chat_left_msg_text_view);
-            userIDText= itemView.findViewById(R.id.user_id);
+            messageText = (TextView) itemView.findViewById(R.id.chat_reply_msg_text_view);
+            userIDText= itemView.findViewById(R.id.reply_user_id);
             leftReplyLayout=itemView.findViewById(R.id.left_reply_layout);
             leftReplyTextView=itemView.findViewById(R.id.left_reply_textview);
             div=itemView.findViewById(R.id.left_reply_divider);
@@ -191,6 +230,63 @@ public class ChatAdapter extends RecyclerView.Adapter {
                             actionModeInterface.replyClickHandler(pos);
                         }
                     });
+                }else{
+                    div.setVisibility(View.GONE);
+                    leftReplyLayout.setVisibility(View.GONE);
+                }
+            }
+            if(actionModeInterface.setSelectionColor(chat)){
+                v.setBackgroundResource(R.color.selection);
+            }else{
+                v.setBackgroundResource(0);
+            }
+        }
+
+        @Override
+        public boolean onLongClick(View view) {
+            actionModeInterface.onLongClickHandler(getAdapterPosition());
+            return true;
+        }
+
+        @Override
+        public void onClick(View view) {
+            actionModeInterface.onClickHandler(getAdapterPosition());
+        }
+    }
+
+    private class SentReplyHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener, View.OnClickListener{
+        LinearLayout rightReplyLayout;
+        TextView messageText,rightReplyTextview;
+        View v,div;
+
+        SentReplyHolder(View itemView){
+            super(itemView);
+            rightReplyLayout=itemView.findViewById(R.id.right_reply_layout);
+            rightReplyTextview=itemView.findViewById(R.id.right_reply_textview);
+            div=itemView.findViewById(R.id.right_reply_divider);
+            messageText =itemView.findViewById(R.id.chat_right_reply_msg_text_view);
+            v=itemView;
+            itemView.setOnLongClickListener(this);
+            itemView.setOnClickListener(this);
+        }
+
+        void bind(ChatModel chat) {
+            messageText.setText(chat.getChatMessage());
+            if(chat.getQuotedMessageId()!=null){
+                final int pos=getObjPos(chat.getQuotedMessageId());
+                if(pos!=-1) {
+                    div.setVisibility(View.VISIBLE);
+                    rightReplyLayout.setVisibility(View.VISIBLE);
+                    rightReplyTextview.setText(chatModelList.get(pos).getChatMessage());
+                    rightReplyLayout.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            actionModeInterface.replyClickHandler(pos);
+                        }
+                    });
+                }else{
+                    div.setVisibility(View.GONE);
+                    rightReplyLayout.setVisibility(View.GONE);
                 }
             }
             if(actionModeInterface.setSelectionColor(chat)){

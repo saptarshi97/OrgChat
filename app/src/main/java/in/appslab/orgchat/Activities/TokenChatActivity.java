@@ -197,14 +197,8 @@ public class TokenChatActivity extends AppCompatActivity {
                 inputEditText.setText("");
                 inputEditText.setHint("Send Message");
                 String time = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(new Date());
-                Data data = new Data(msg, time, selfID, "", 0);
-                if(tokenReplyLayout.getVisibility()==View.VISIBLE){
-                    data.setQuotedMessageId(quotedTextId);
-                }else{
-                    data.setQuotedMessageId(null);
-                }
-                sendPayload(data,msg, time, selfID, testDestinationToken);
-                quotedTextId=null;
+
+                sendPayload(msg, time, selfID, testDestinationToken);
             }
         });
     }
@@ -263,7 +257,11 @@ public class TokenChatActivity extends AppCompatActivity {
         };
     }
 
-    private void sendPayload(Data data,final String msg, final String time, final String selfID, final String destinationToken) {
+    private void sendPayload(final String msg, final String time, final String selfID, final String destinationToken) {
+        Data data = new Data(msg, time, selfID, "", 0);
+        if(tokenReplyLayout.getVisibility()==View.VISIBLE){
+            data.setQuotedMessageId(quotedTextId);
+        }
         Message message = new Message(destinationToken, data);
         Call<SendMessageResponse> call = APIClient.getAPIInterface().sendMessage(legacyServerKey, message);
         call.enqueue(new Callback<SendMessageResponse>() {
@@ -425,6 +423,7 @@ public class TokenChatActivity extends AppCompatActivity {
     private void setReply(ChatModel chatModel) {
         tokenReplyLayout.setVisibility(View.VISIBLE);
         quotedTextId=chatModel.getMessageId();
+        Log.d(TAG, "setReply: "+quotedTextId+"\nname:"+chatModel.getChatMessage());
         tokenReplyText.setText(chatModel.getChatMessage());
     }
 

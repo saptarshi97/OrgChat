@@ -13,39 +13,6 @@
         android:layout_gravity="end"
         android:background="@drawable/chat_bg"
         android:orientation="vertical">
-
-        <LinearLayout
-            android:id="@+id/right_reply_layout"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp"
-            android:layout_marginTop="10dp"
-            android:orientation="horizontal"
-            android:visibility="gone">
-            <View
-                android:layout_width="5dp"
-                android:layout_height="match_parent"
-                android:layout_marginRight="4dp"
-                android:background="@color/white" />
-            <TextView
-                android:id="@+id/right_reply_textview"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/white"
-                android:maxLines="3"
-                android:text="This is a reply text"/>
-        </LinearLayout>
-        <View
-            android:id="@+id/right_reply_divider"
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp"
-            android:layout_marginTop="10dp"
-            android:background="@color/white"
-            android:visibility="gone"/>
-
         <TextView
             android:id="@+id/chat_right_msg_text_view"
             android:layout_width="wrap_content"

@@ -10,6 +10,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -211,7 +212,7 @@ public class CreateInviteActivity extends AppCompatActivity implements AdapterVi
 
     private void setAdapterForSpinner() {
         teamsList.add(0,new TeamSpinnerModel("No Team","No Team"));
-        Query query=db.collection("teams").whereEqualTo("company",company).whereEqualTo("lead_id",userID);
+        Query query=db.collection("teams").whereEqualTo("organizationID",organizationID).whereEqualTo("lead_id",userID);
         query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
             @Override
             public void onComplete(@NonNull Task<QuerySnapshot> task) {
@@ -228,6 +229,15 @@ public class CreateInviteActivity extends AppCompatActivity implements AdapterVi
     }
 
     @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            onBackPressed();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
     public void onItemSelected(AdapterView<?> arg0, View arg1, int position, long id) {
         TeamSpinnerModel member=(TeamSpinnerModel)arg0.getSelectedItem();
         selectedTeam =member.getTeamName();
@@ -236,5 +246,10 @@ public class CreateInviteActivity extends AppCompatActivity implements AdapterVi
     }
     @Override
     public void onNothingSelected(AdapterView<?> arg0) {
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
     }
 }
