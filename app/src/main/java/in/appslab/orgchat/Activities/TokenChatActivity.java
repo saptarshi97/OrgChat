@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
@@ -22,6 +23,8 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.firebase.storage.FirebaseStorage;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
@@ -48,11 +51,12 @@ import retrofit2.Response;
 public class TokenChatActivity extends AppCompatActivity {
     private RecyclerView rv;
     private EditText inputEditText;
-    private ImageView send;
+    private ImageView send,attach;
     private ChatAdapter adapter;
     private List<ChatModel> chatModelList;
     BroadcastReceiver receiver;
     private static final String TAG = "TokenChatActivity";
+    private static final int PICK_IMAGE_REQUEST=1;
     public static String PREF_NAME = "shared values";
     private String legacyServerKey = "key=AIzaSyCJsQ88WD_mqV0XYw9brGS9RJfOhXyOiKU";
     private String testDestinationToken;
@@ -65,6 +69,7 @@ public class TokenChatActivity extends AppCompatActivity {
     private RelativeLayout tokenReplyLayout;
     private TextView tokenReplyText;
     private ImageView tokenDismissReply;
+    private Uri imageUri;
     public static boolean isInActionMode = false;
     public static ArrayList<ChatModel> selectionList;
 
@@ -105,6 +110,7 @@ public class TokenChatActivity extends AppCompatActivity {
         tokenDismissReply=findViewById(R.id.token_dismiss_reply);
         rv=findViewById(R.id.token_chat_rv);
         inputEditText=findViewById(R.id.token_input_edit_text);
+        attach=findViewById(R.id.token_attach);
         send=findViewById(R.id.token_send_icon);
         init();
         initReceiver();
@@ -188,6 +194,12 @@ public class TokenChatActivity extends AppCompatActivity {
                 quotedTextId=null;
             }
         });
+        attach.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                chooseImage();
+            }
+        });
         send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -201,6 +213,19 @@ public class TokenChatActivity extends AppCompatActivity {
                 sendPayload(msg, time, selfID, testDestinationToken);
             }
         });
+    }
+
+    private void chooseImage() {
+        startActivityForResult(new Intent().setType("image/*").setAction(Intent.ACTION_GET_CONTENT),PICK_IMAGE_REQUEST);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if(requestCode==PICK_IMAGE_REQUEST && resultCode== RESULT_OK && data!=null && data.getData()!=null){
+            imageUri=data.getData();
+        }
     }
 
     private void initReceiver() {
