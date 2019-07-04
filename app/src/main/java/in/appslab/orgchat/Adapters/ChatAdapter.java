@@ -35,6 +35,8 @@ public class ChatAdapter extends RecyclerView.Adapter {
     private static final int VIEW_TYPE_MESSAGE_RECEIVED_REPLY=3;
     private static final int VIEW_TYPE_MESSAGE_RECEIVED_IMAGE=4;
     private static final int VIEW_TYPE_MESSAGE_SENT_IMAGE=5;
+    private static final int VIEW_TYPE_MESSAGE_SENT_IMAGE_REPLY=6;
+    private static final int VIEW_TYPE_MESSAGE_RECEIVED_IMAGE_REPLY=7;
     public static String PREF_NAME="shared values";
     Activity activity;
     private String selfID;
@@ -73,10 +75,25 @@ public class ChatAdapter extends RecyclerView.Adapter {
             return  VIEW_TYPE_MESSAGE_SENT;
         else if(!chatObj.getSender().equals(selfID) && chatObj.getQuotedMessageId()==null)
             return VIEW_TYPE_MESSAGE_RECEIVED;
-        else if(chatObj.getSender().equals(selfID) && chatObj.getQuotedMessageId()!=null)
-            return VIEW_TYPE_MESSAGE_SENT_REPLY;
-        else if(!chatObj.getSender().equals(selfID) && chatObj.getQuotedMessageId()!=null)
+        else if(chatObj.getSender().equals(selfID) && chatObj.getQuotedMessageId()!=null) {
+            int pos = getObjPos(chatObj.getQuotedMessageId());
+            if(chatModelList.get(pos).getDownloadUri()==null) {
+                return VIEW_TYPE_MESSAGE_SENT_REPLY;
+            }else
+                return VIEW_TYPE_MESSAGE_SENT_IMAGE_REPLY;
+        }
+        else if(!chatObj.getSender().equals(selfID) && chatObj.getQuotedMessageId()!=null) {
+            int pos = getObjPos(chatObj.getQuotedMessageId());
+            try {
+                if (chatModelList.get(pos).getDownloadUri() == null) {
+                    return VIEW_TYPE_MESSAGE_RECEIVED_REPLY;
+                } else
+                    return VIEW_TYPE_MESSAGE_RECEIVED_IMAGE_REPLY;
+            }catch (Exception e){
+                Log.d(TAG, "getItemViewType: error"+e.getLocalizedMessage());
+            }
             return VIEW_TYPE_MESSAGE_RECEIVED_REPLY;
+        }
         else
             return -1;
     }
@@ -108,6 +125,14 @@ public class ChatAdapter extends RecyclerView.Adapter {
             view=LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item_image_received,parent,false);
             return new ReceivedImageHolder(view);
+        }else if(i==VIEW_TYPE_MESSAGE_SENT_IMAGE_REPLY){
+            view=LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_image_reply_sent,parent,false);
+            return new SentImageReplyHolder(view);
+        }else if(i==VIEW_TYPE_MESSAGE_RECEIVED_IMAGE_REPLY){
+            view=LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_image_reply_received,parent,false);
+            return new ReceivedImageReplyHolder(view);
         }
         return null;
     }
@@ -135,6 +160,12 @@ public class ChatAdapter extends RecyclerView.Adapter {
                 break;
             case VIEW_TYPE_MESSAGE_RECEIVED_IMAGE:
                 ((ReceivedImageHolder)holder).bind(chatObj);
+                break;
+            case VIEW_TYPE_MESSAGE_SENT_IMAGE_REPLY:
+                ((SentImageReplyHolder)holder).bind(chatObj);
+                break;
+            case VIEW_TYPE_MESSAGE_RECEIVED_IMAGE_REPLY:
+                ((ReceivedImageReplyHolder)holder).bind(chatObj);
                 break;
         }
     }
@@ -375,18 +406,132 @@ public class ChatAdapter extends RecyclerView.Adapter {
 
     private class ReceivedImageHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener, View.OnClickListener{
         ImageView receivedImage;
+        TextView senderTextView;
         View v;
 
         ReceivedImageHolder(View itemView) {
             super(itemView);
             receivedImage=itemView.findViewById(R.id.left_chat_image);
+            senderTextView=itemView.findViewById(R.id.received_image_user_id);
             v=itemView;
             itemView.setOnLongClickListener(this);
             itemView.setOnClickListener(this);
         }
 
         void bind(ChatModel chat) {
+            senderTextView.setText(chat.getSender());
             Picasso.get().load(Uri.parse(chat.getDownloadUri())).into(receivedImage);
+            if(actionModeInterface.setSelectionColor(chat)){
+                v.setBackgroundResource(R.color.selection);
+            }else{
+                v.setBackgroundResource(0);
+            }
+        }
+
+        @Override
+        public boolean onLongClick(View view) {
+            actionModeInterface.onLongClickHandler(getAdapterPosition());
+            return true;
+        }
+
+        @Override
+        public void onClick(View view) {
+            actionModeInterface.onClickHandler(getAdapterPosition());
+        }
+    }
+
+    private class ReceivedImageReplyHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener, View.OnClickListener{
+        LinearLayout leftImageReplyLayout;
+        TextView messageText, userIDText;
+        ImageView replyImage;
+        View v,div;
+
+        ReceivedImageReplyHolder(View itemView){
+            super(itemView);
+            messageText=itemView.findViewById(R.id.left_image_reply_msg_text_view);
+            userIDText= itemView.findViewById(R.id.image_reply_user_id);
+            leftImageReplyLayout=itemView.findViewById(R.id.image_reply_left_layout);
+            div=itemView.findViewById(R.id.left_image_reply_divider);
+            replyImage=itemView.findViewById(R.id.left_image_view);
+            v=itemView;
+            itemView.setOnLongClickListener(this);
+            itemView.setOnClickListener(this);
+        }
+
+        void bind(ChatModel chat) {
+            messageText.setText(chat.getChatMessage());
+            userIDText.setText(chat.getSender());
+            if(chat.getQuotedMessageId()!=null){
+                final int pos=getObjPos(chat.getQuotedMessageId());
+                if(pos!=-1) {
+                    div.setVisibility(View.VISIBLE);
+                    leftImageReplyLayout.setVisibility(View.VISIBLE);
+                    Picasso.get().load(Uri.parse(chatModelList.get(pos).getDownloadUri())).into(replyImage);
+                    leftImageReplyLayout.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            actionModeInterface.replyClickHandler(pos);
+                        }
+                    });
+                }else{
+                    div.setVisibility(View.GONE);
+                    leftImageReplyLayout.setVisibility(View.GONE);
+                }
+            }
+            if(actionModeInterface.setSelectionColor(chat)){
+                v.setBackgroundResource(R.color.selection);
+            }else{
+                v.setBackgroundResource(0);
+            }
+        }
+
+        @Override
+        public boolean onLongClick(View view) {
+            actionModeInterface.onLongClickHandler(getAdapterPosition());
+            return true;
+        }
+
+        @Override
+        public void onClick(View view) {
+            actionModeInterface.onClickHandler(getAdapterPosition());
+        }
+    }
+
+    private class SentImageReplyHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener, View.OnClickListener{
+        LinearLayout rightImageReplyLayout;
+        TextView messageText;
+        ImageView rightReplyImage;
+        View v,div;
+
+        SentImageReplyHolder(View itemView){
+            super(itemView);
+            rightImageReplyLayout=itemView.findViewById(R.id.right_image_reply_layout);
+            div=itemView.findViewById(R.id.right_image_reply_divider);
+            messageText =itemView.findViewById(R.id.right_image_reply_msg_text_view);
+            rightReplyImage=itemView.findViewById(R.id.right_image_view);
+            v=itemView;
+            itemView.setOnLongClickListener(this);
+            itemView.setOnClickListener(this);
+        }
+
+        void bind(ChatModel chat) {
+            messageText.setText(chat.getChatMessage());
+            if(chat.getQuotedMessageId()!=null){
+                final int pos=getObjPos(chat.getQuotedMessageId());
+                if(pos!=-1) {
+                    div.setVisibility(View.VISIBLE);
+                    Picasso.get().load(Uri.parse(chatModelList.get(pos).getDownloadUri())).into(rightReplyImage);
+                    rightImageReplyLayout.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            actionModeInterface.replyClickHandler(pos);
+                        }
+                    });
+                }else{
+                    div.setVisibility(View.GONE);
+                    rightImageReplyLayout.setVisibility(View.GONE);
+                }
+            }
             if(actionModeInterface.setSelectionColor(chat)){
                 v.setBackgroundResource(R.color.selection);
             }else{

@@ -15,8 +15,8 @@
         android:orientation="vertical">
 
         <LinearLayout
-            android:id="@+id/right_reply_layout"
-            android:layout_width="wrap_content"
+            android:id="@+id/right_image_reply_layout"
+            android:layout_width="200dp"
             android:layout_height="wrap_content"
             android:layout_marginLeft="10dp"
             android:layout_marginRight="10dp"
@@ -29,15 +29,22 @@
                 android:layout_marginRight="4dp"
                 android:background="@color/white" />
             <TextView
-                android:id="@+id/right_reply_textview"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:textColor="@color/white"
+                android:layout_gravity="center|start|left"
                 android:maxLines="3"
-                android:text="This is a reply text"/>
+                android:text="Photo"/>
+            <ImageView
+                android:id="@+id/right_image_view"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_launcher_web"/>
         </LinearLayout>
         <View
-            android:id="@+id/right_reply_divider"
+            android:id="@+id/right_image_reply_divider"
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginLeft="10dp"
@@ -47,7 +54,7 @@
             android:visibility="visible"/>
 
         <TextView
-            android:id="@+id/chat_right_reply_msg_text_view"
+            android:id="@+id/right_image_reply_msg_text_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center|start|left"

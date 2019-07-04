@@ -94,11 +94,12 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                                                               ChatModel obj = new ChatModel(remoteMessage.getData().get("message"), remoteMessage.getData().get("time"), remoteMessage.getData().get("senderID"), selfID, remoteMessage.getData().get("topicName"), 1);
                                                               obj.setMessageId(remoteMessage.getMessageId());
                                                               try {
-                                                                  if (remoteMessage.getData().get("quotedMessageId") != null && !remoteMessage.getData().get("quotedMessageId").isEmpty()) {
+                                                                  if(remoteMessage.getData().get("quotedMessageId") != null && !remoteMessage.getData().get("quotedMessageId").isEmpty()) {
                                                                       obj.setQuotedMessageId(remoteMessage.getData().get("quotedMessageId"));
+                                                                      Log.d(TAG, "execute: quotedMessageId: "+remoteMessage.getData().get("quotedMessageId"));
                                                                   }
-                                                              } catch (Exception e) {
-                                                                  e.printStackTrace();
+                                                              }catch (Exception e){
+                                                                  Log.d(TAG, "execute: Exception: "+e.getLocalizedMessage());
                                                               }
                                                               try{
                                                                   if(remoteMessage.getData().get("downloadUri") != null && !remoteMessage.getData().get("downloadUri").isEmpty()) {
