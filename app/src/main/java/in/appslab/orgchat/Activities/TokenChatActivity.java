@@ -250,7 +250,7 @@ public class TokenChatActivity extends AppCompatActivity {
     private void uploadFile(Uri imageUri) {
         if(imageUri!=null){
             //TODO append child ref with userID (Phone number or Firebase UID) to avoid name conflict
-            final StorageReference fileRef=ref.child(System.currentTimeMillis()+"."+getFileExtension(imageUri));
+            final StorageReference fileRef=ref.child(selfID+""+System.currentTimeMillis()+"."+getFileExtension(imageUri));
 
             Task<Uri> urlTask=fileRef.putFile(imageUri).continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
                 @Override
@@ -506,7 +506,10 @@ public class TokenChatActivity extends AppCompatActivity {
         tokenReplyLayout.setVisibility(View.VISIBLE);
         quotedTextId=chatModel.getMessageId();
         Log.d(TAG, "setReply: "+quotedTextId+"\nname:"+chatModel.getChatMessage());
-        tokenReplyText.setText(chatModel.getChatMessage());
+        if(chatModel.getChatMessage()!=null && !chatModel.getChatMessage().isEmpty())
+            tokenReplyText.setText(chatModel.getChatMessage());
+        else
+            tokenReplyText.setText("Photo");
     }
 
 

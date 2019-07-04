@@ -284,18 +284,21 @@ public class TopicChatActivity extends AppCompatActivity {
                         throw task.getException();
                     }
 
-                    return ref.getDownloadUrl();
+                    return fileRef.getDownloadUrl();
                 }
             }).addOnCompleteListener(new OnCompleteListener<Uri>() {
                 @Override
                 public void onComplete(@NonNull Task<Uri> task) {
                     if(task.isSuccessful() && task.getResult()!=null){
-                        Log.d(TAG, "onComplete: start");
                         Uri downloadUri=task.getResult();
                         String time = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(new Date());
                         sendPayload(null, time, selfID, topic,downloadUri.toString());
-                        Log.d(TAG, "onComplete: end");
                     }
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Log.d(TAG, "onFailure: "+e.getLocalizedMessage());
                 }
             });
         }
@@ -490,7 +493,10 @@ public class TopicChatActivity extends AppCompatActivity {
         topicReplyLayout.setVisibility(View.VISIBLE);
         quotedTextId=chatModel.getMessageId();
         Log.d(TAG, "setReply: with quotedTextID:"+quotedTextId);
-        topicReplyText.setText(chatModel.getChatMessage());
+        if( chatModel.getChatMessage()!=null && !chatModel.getChatMessage().isEmpty())
+            topicReplyText.setText(chatModel.getChatMessage());
+        else
+            topicReplyText.setText("Photo");
     }
 
     private void forwardMessage(ArrayList<ChatModel> selectionList) {

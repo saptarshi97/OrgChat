@@ -1,7 +1,9 @@
 package in.appslab.orgchat.Activities;
 
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -102,22 +104,23 @@ public class RecipientListActivity extends AppCompatActivity {
             if(x.getIsTopic()==0){
                 for(ChatModel y:forwardedChats){
                     String time = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(new Date());
-                    sendPayload(y.getChatMessage(),time,userID,x.getUserToken(),x.getIsTopic());
+                    sendPayload(y.getChatMessage(),time,userID,x.getUserToken(),x.getIsTopic(),y.getDownloadUri());
                 }
             }else{
                 for(ChatModel y:forwardedChats){
                     String time = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(new Date());
-                    sendPayload(y.getChatMessage(),time,userID,x.getUserToken(),x.getIsTopic());
+                    sendPayload(y.getChatMessage(),time,userID,x.getUserToken(),x.getIsTopic(),y.getDownloadUri());
                 }
             }
         }
         finish();
     }
 
-    private void sendPayload(final String msg,final  String time,final String selfID,final String destination,final  int isTopic) {
+    private void sendPayload(@Nullable final String msg,final  String time,final String selfID,final String destination,final  int isTopic,@Nullable final String downloadUri) {
         Message message=new Message();
         if(isTopic==0){
             Data data = new Data(msg, time, selfID, "", isTopic);
+            data.setDownloadUri(downloadUri);
             message.setTo(destination);
             message.setData(data);
             Call<SendMessageResponse> call = APIClient.getAPIInterface().sendMessage(legacyServerKey, message);
@@ -127,7 +130,7 @@ public class RecipientListActivity extends AppCompatActivity {
                     if (response.isSuccessful() && response.body().getSuccess().equals("1")) {
                         try {
                             String messageId = response.body().getResults().get(0).getMessageId();
-                            setChatObject(msg, time, selfID, destination, isTopic, messageId);
+                            setChatObject(msg, time, selfID, destination, isTopic, messageId,downloadUri);
                         }catch (Exception e){
                             e.printStackTrace();
                         }
@@ -142,6 +145,7 @@ public class RecipientListActivity extends AppCompatActivity {
             });
         }else{
             Data data=new Data(msg,time,selfID,destination,isTopic);
+            data.setDownloadUri(downloadUri);
             message.setTo("/topics/"+destination);
             message.setData(data);
             Call<SendTopicMessageResponse> call= APIClient.getAPIInterface().sendTopicMessage(legacyServerKey, message);
@@ -151,7 +155,7 @@ public class RecipientListActivity extends AppCompatActivity {
                     if(response.isSuccessful() && response.body().getMessageId()!=null) {
                         try {
                             String messageId = response.body().getMessageId();
-                            setChatObject(msg, time,selfID,destination,isTopic,messageId);
+                            setChatObject(msg, time,selfID,destination,isTopic,messageId,downloadUri);
                         }catch (Exception e){
                             Log.d(TAG, "onResponse: Error"+e.getLocalizedMessage());
                         }
@@ -169,16 +173,18 @@ public class RecipientListActivity extends AppCompatActivity {
         }
     }
 
-    private void setChatObject(String msg, String time, String selfID, String destination, int isTopic, String messageId) {
+    private void setChatObject(@Nullable String msg, String time, String selfID, String destination, int isTopic, String messageId,@Nullable String downloadUri) {
         List<ChatModel> chatModelList = new ArrayList<>();
         mDatabase.beginTransaction();
         if(isTopic==0){
             ChatModel chatModelObject = new ChatModel(msg, time, selfID, destination, "", isTopic);
             chatModelObject.setMessageId(messageId);
+            chatModelObject.setDownloadUri(downloadUri);
             chatModelList.add(chatModelObject);
         }else{
             ChatModel chatModelObject = new ChatModel(msg, time, selfID, destination, destination, isTopic);
             chatModelObject.setMessageId(messageId);
+            chatModelObject.setDownloadUri(downloadUri);
             chatModelList.add(chatModelObject);
         }
         mDatabase.insert(chatModelList);
