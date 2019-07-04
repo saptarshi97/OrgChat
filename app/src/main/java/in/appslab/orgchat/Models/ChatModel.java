@@ -1,5 +1,6 @@
 package in.appslab.orgchat.Models;
 
+import android.net.Uri;
 import android.support.annotation.Nullable;
 
 import java.io.Serializable;
@@ -13,18 +14,21 @@ public class ChatModel extends RealmObject implements Serializable {
     private String messageId;
     @Nullable
     private String quotedMessageId;
+    @Nullable
     private String chatMessage;
     private String timestamp;
     private String sender;
     private String receiver;
     private String topicName;
     private int isTopic;
+    @Nullable
+    private String downloadUri;
 
     public ChatModel(){
 
     }
 
-    public ChatModel(String chatMessage, String timestamp, String sender, String receiver, String topicName, int isTopic) {
+    public ChatModel(@Nullable String chatMessage, String timestamp, String sender, String receiver, String topicName, int isTopic) {
         this.chatMessage = chatMessage;
         this.timestamp = timestamp;
         this.sender = sender;
@@ -50,11 +54,12 @@ public class ChatModel extends RealmObject implements Serializable {
         this.messageId = messageId;
     }
 
+    @Nullable
     public String getChatMessage() {
         return chatMessage;
     }
 
-    public void setChatMessage(String chatMessage) {
+    public void setChatMessage(@Nullable String chatMessage) {
         this.chatMessage = chatMessage;
     }
 
@@ -96,5 +101,14 @@ public class ChatModel extends RealmObject implements Serializable {
 
     public void setIsTopic(int isTopic) {
         this.isTopic = isTopic;
+    }
+
+    @Nullable
+    public String getDownloadUri() {
+        return downloadUri;
+    }
+
+    public void setDownloadUri(@Nullable String downloadUri) {
+        this.downloadUri = downloadUri;
     }
 }

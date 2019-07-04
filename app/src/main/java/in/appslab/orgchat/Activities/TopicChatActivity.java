@@ -3,10 +3,13 @@ package in.appslab.orgchat.Activities;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.Uri;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
@@ -17,11 +20,21 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.webkit.MimeTypeMap;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.android.gms.tasks.Continuation;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
@@ -48,14 +61,15 @@ import retrofit2.Response;
 public class TopicChatActivity extends AppCompatActivity {
     private RecyclerView rv;
     private EditText inputEditText;
-    private ImageView send;
+    private ImageView send,attach;
     ChatAdapter adapter;
     private List<ChatModel> chatModelList;
     BroadcastReceiver receiver;
     private String selfID;
     private String topic;
     private Toolbar toolbar;
-    private static final String TAG = "TopicChatFragment";
+    private static final int PICK_IMAGE_REQUEST=1;
+    private static final String TAG = "TopicChatActivity";
     public static String PREF_NAME="shared values";
     private String legacyServerKey="key=AIzaSyCJsQ88WD_mqV0XYw9brGS9RJfOhXyOiKU";
     private String fragmentTitle;
@@ -66,12 +80,15 @@ public class TopicChatActivity extends AppCompatActivity {
     public static boolean isInActionMode = false;
     public static ArrayList<ChatModel> selectionList;
     private String quotedTextId=null;
+    private Uri imageUri=null;
+    private StorageReference ref;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_topic_chat);
         SharedPreferences prefs=getSharedPreferences(PREF_NAME,Context.MODE_PRIVATE);
+        ref=FirebaseStorage.getInstance().getReference("uploads");
         chatModelList=new ArrayList<>();
         selectionList = new ArrayList<>();
         mDatabase = Realm.getDefaultInstance();
@@ -214,6 +231,12 @@ public class TopicChatActivity extends AppCompatActivity {
                 quotedTextId=null;
             }
         });
+        attach.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                chooseImage();
+            }
+        });
         send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -224,9 +247,58 @@ public class TopicChatActivity extends AppCompatActivity {
                 inputEditText.setHint("Send Message");
                 String time=new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(new Date());
 
-                sendPayload(msg,time, selfID,topic);
+                sendPayload(msg,time, selfID,topic,null);
             }
         });
+    }
+
+    private void chooseImage() {
+        startActivityForResult(new Intent().setType("image/*").setAction(Intent.ACTION_GET_CONTENT),PICK_IMAGE_REQUEST);
+    }
+
+    private String getFileExtension(Uri uri) {
+        ContentResolver cR = getContentResolver();
+        MimeTypeMap mime = MimeTypeMap.getSingleton();
+        return mime.getExtensionFromMimeType(cR.getType(uri));
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if(requestCode==PICK_IMAGE_REQUEST && resultCode== RESULT_OK && data!=null && data.getData()!=null){
+            imageUri=data.getData();
+            uploadFile(imageUri);
+        }
+    }
+
+    private void uploadFile(Uri imageUri) {
+        if(imageUri!=null){
+            //TODO append child ref with userID (Phone number or Firebase UID) to avoid name conflict
+            final StorageReference fileRef=ref.child(System.currentTimeMillis()+"."+getFileExtension(imageUri));
+
+            Task<Uri> urlTask=fileRef.putFile(imageUri).continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
+                @Override
+                public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
+                    if(!task.isSuccessful()){
+                        throw task.getException();
+                    }
+
+                    return ref.getDownloadUrl();
+                }
+            }).addOnCompleteListener(new OnCompleteListener<Uri>() {
+                @Override
+                public void onComplete(@NonNull Task<Uri> task) {
+                    if(task.isSuccessful() && task.getResult()!=null){
+                        Log.d(TAG, "onComplete: start");
+                        Uri downloadUri=task.getResult();
+                        String time = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(new Date());
+                        sendPayload(null, time, selfID, topic,downloadUri.toString());
+                        Log.d(TAG, "onComplete: end");
+                    }
+                }
+            });
+        }
     }
 
     private void initViews(){  // Method for initializing the views
@@ -241,6 +313,7 @@ public class TopicChatActivity extends AppCompatActivity {
         rv=findViewById(R.id.topic_chat_rv);
         inputEditText=findViewById(R.id.topic_input);
         send=findViewById(R.id.topic_send);
+        attach=findViewById(R.id.topic_attach);
         topicReplyLayout=findViewById(R.id.topic_reply_layout);
         topicReplyText=findViewById(R.id.topic_reply_text);
         topicDismissReply=findViewById(R.id.topic_dismiss_reply);
@@ -248,9 +321,12 @@ public class TopicChatActivity extends AppCompatActivity {
         initReceiver();
     }
 
-    private void sendPayload(final String msg, final  String time,final String selfID,final String destinationTopic) {
+    private void sendPayload(@Nullable final String msg, final  String time,final String selfID,final String destinationTopic,@Nullable final String downloadUri) {
         Data data=new Data(msg,time,selfID,destinationTopic,1);
         data.setQuotedMessageId(quotedTextId);
+        if(downloadUri!=null){
+            data.setDownloadUri(downloadUri);
+        }
         Log.d(TAG, "sendPayload: quoted text in Data object"+data.getQuotedMessageId());
         final Message message=new Message("/topics/"+destinationTopic,data);
         Call<SendTopicMessageResponse> call= APIClient.getAPIInterface().sendTopicMessage(legacyServerKey, message);
@@ -262,10 +338,10 @@ public class TopicChatActivity extends AppCompatActivity {
                         String messageId = response.body().getMessageId();
                         if(topicReplyLayout.getVisibility()==View.VISIBLE){
                             topicReplyLayout.setVisibility(View.GONE);
-                            setChatObject(msg, time,destinationTopic,messageId,quotedTextId);
+                            setChatObject(msg, time,destinationTopic,messageId,quotedTextId,downloadUri);
                             quotedTextId=null;
                         }else {
-                            setChatObject(msg, time, destinationTopic,messageId,null);
+                            setChatObject(msg, time, destinationTopic,messageId,null,downloadUri);
                         }
                     }catch (Exception e){
                         Log.d(TAG, "onResponse: Error"+e.getLocalizedMessage());
@@ -284,7 +360,7 @@ public class TopicChatActivity extends AppCompatActivity {
         });
     }
 
-    private void setChatObject(String message, String time, String topicName, String messageId, @Nullable String quotedTextId) {
+    private void setChatObject(@Nullable String message, String time, String topicName, String messageId, @Nullable String quotedTextId,@Nullable final String downloadUri) {
         mDatabase.beginTransaction();
         mDatabase.where(ChatModel.class)
                 .equalTo("isTopic", 1)
@@ -298,6 +374,9 @@ public class TopicChatActivity extends AppCompatActivity {
         chatModelObject.setMessageId(messageId);
         if(quotedTextId!=null){
             chatModelObject.setQuotedMessageId(quotedTextId);
+        }
+        if(downloadUri!=null){
+            chatModelObject.setDownloadUri(downloadUri);
         }
         chatModelList.add(chatModelObject);
         Log.d(TAG, "setChatObject: "+chatModelList.size());

@@ -78,6 +78,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                                                           }catch (Exception e){
                                                               e.printStackTrace();
                                                           }
+                                                          try{
+                                                              if(remoteMessage.getData().get("downloadUri") != null && !remoteMessage.getData().get("downloadUri").isEmpty()) {
+                                                                  obj.setDownloadUri(remoteMessage.getData().get("downloadUri"));
+                                                              }
+                                                          }catch (Exception e){
+                                                              e.printStackTrace();
+                                                          }
                                                           chatModelList.add(obj);
                                                           Log.d(TAG, "execute: message from: "+remoteMessage.getData().get("senderID"));
                                                       }
@@ -91,6 +98,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                                                                       obj.setQuotedMessageId(remoteMessage.getData().get("quotedMessageId"));
                                                                   }
                                                               } catch (Exception e) {
+                                                                  e.printStackTrace();
+                                                              }
+                                                              try{
+                                                                  if(remoteMessage.getData().get("downloadUri") != null && !remoteMessage.getData().get("downloadUri").isEmpty()) {
+                                                                      obj.setDownloadUri(remoteMessage.getData().get("downloadUri"));
+                                                                  }
+                                                              }catch (Exception e){
                                                                   e.printStackTrace();
                                                               }
                                                               chatModelList.add(obj);
@@ -109,7 +123,11 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                                 broadcaster.sendBroadcast(intent);
                                 realm.close();
                                 if(sendNotificationFlag)
-                                    sendNotification(remoteMessage.getData().get("message"));
+                                    if(remoteMessage.getData().get("message")!=null) {
+                                        sendNotification(remoteMessage.getData().get("message"));
+                                    }else {
+                                        sendNotification("Image Received");
+                                    }
                             }
                         }, new Realm.Transaction.OnError() {
                             @Override

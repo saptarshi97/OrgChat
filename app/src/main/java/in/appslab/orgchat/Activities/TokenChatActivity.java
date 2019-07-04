@@ -3,11 +3,13 @@ package in.appslab.orgchat.Activities;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
@@ -18,13 +20,21 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.webkit.MimeTypeMap;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.Continuation;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
@@ -69,9 +79,10 @@ public class TokenChatActivity extends AppCompatActivity {
     private RelativeLayout tokenReplyLayout;
     private TextView tokenReplyText;
     private ImageView tokenDismissReply;
-    private Uri imageUri;
+    private Uri imageUri=null;
     public static boolean isInActionMode = false;
     public static ArrayList<ChatModel> selectionList;
+    private StorageReference ref;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,6 +91,7 @@ public class TokenChatActivity extends AppCompatActivity {
         if(getSupportActionBar()!=null){
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
+        ref=FirebaseStorage.getInstance().getReference("uploads");
         mDatabase = Realm.getDefaultInstance();
         selectionList = new ArrayList<>();
         chatModelList = new ArrayList<>();
@@ -210,7 +222,7 @@ public class TokenChatActivity extends AppCompatActivity {
                 inputEditText.setHint("Send Message");
                 String time = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(new Date());
 
-                sendPayload(msg, time, selfID, testDestinationToken);
+                sendPayload(msg, time, selfID, testDestinationToken,null);
             }
         });
     }
@@ -219,12 +231,51 @@ public class TokenChatActivity extends AppCompatActivity {
         startActivityForResult(new Intent().setType("image/*").setAction(Intent.ACTION_GET_CONTENT),PICK_IMAGE_REQUEST);
     }
 
+    private String getFileExtension(Uri uri) {
+        ContentResolver cR = getContentResolver();
+        MimeTypeMap mime = MimeTypeMap.getSingleton();
+        return mime.getExtensionFromMimeType(cR.getType(uri));
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
         if(requestCode==PICK_IMAGE_REQUEST && resultCode== RESULT_OK && data!=null && data.getData()!=null){
             imageUri=data.getData();
+            uploadFile(imageUri);
+        }
+    }
+
+    private void uploadFile(Uri imageUri) {
+        if(imageUri!=null){
+            //TODO append child ref with userID (Phone number or Firebase UID) to avoid name conflict
+            final StorageReference fileRef=ref.child(System.currentTimeMillis()+"."+getFileExtension(imageUri));
+
+            Task<Uri> urlTask=fileRef.putFile(imageUri).continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
+                @Override
+                public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
+                    if(!task.isSuccessful()){
+                        throw task.getException();
+                    }
+                    return fileRef.getDownloadUrl();
+                }
+            }).addOnCompleteListener(new OnCompleteListener<Uri>() {
+                @Override
+                public void onComplete(@NonNull Task<Uri> task) {
+                    if(task.isSuccessful() && task.getResult()!=null){
+                        Uri downloadUri=task.getResult();
+                        String time = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(new Date());
+                        sendPayload(null, time, selfID, testDestinationToken,downloadUri.toString());
+                    }
+                }
+            })
+            .addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Log.d(TAG, "onFailure: "+e.getLocalizedMessage());
+                }
+            });
         }
     }
 
@@ -282,10 +333,13 @@ public class TokenChatActivity extends AppCompatActivity {
         };
     }
 
-    private void sendPayload(final String msg, final String time, final String selfID, final String destinationToken) {
+    private void sendPayload(@Nullable final String msg, final String time, final String selfID, final String destinationToken, @Nullable final String downloadUri) {
         Data data = new Data(msg, time, selfID, "", 0);
         if(tokenReplyLayout.getVisibility()==View.VISIBLE){
             data.setQuotedMessageId(quotedTextId);
+        }
+        if(downloadUri!=null){
+            data.setDownloadUri(downloadUri);
         }
         Message message = new Message(destinationToken, data);
         Call<SendMessageResponse> call = APIClient.getAPIInterface().sendMessage(legacyServerKey, message);
@@ -297,10 +351,10 @@ public class TokenChatActivity extends AppCompatActivity {
                         String messageId = response.body().getResults().get(0).getMessageId();
                         if (tokenReplyLayout.getVisibility() == View.VISIBLE) {
                             tokenReplyLayout.setVisibility(View.GONE);
-                            setChatObject(msg, time, messageId, quotedTextId);
+                            setChatObject(msg, time, messageId, quotedTextId,downloadUri);
                             quotedTextId=null;
                         } else {
-                            setChatObject(msg, time, messageId, null);
+                            setChatObject(msg, time, messageId, null,downloadUri);
                         }
                         Log.d(TAG, "onResponse: Successfully sent message, and id is: "+messageId+" isSuccess? "+response.body().getSuccess()+"isFailure?"+response.body().getFailure());
                         Log.d(TAG, "onResponse: sent to: " + destinationToken);
@@ -320,7 +374,7 @@ public class TokenChatActivity extends AppCompatActivity {
         });
     }
 
-    private void setChatObject(String message, String time, String messageId, @Nullable String quotedTextId) {
+    private void setChatObject(@Nullable String message, String time, String messageId, @Nullable String quotedTextId,@Nullable String downloadUri) {
         mDatabase.beginTransaction();
         mDatabase.where(ChatModel.class)
                 .equalTo("isTopic", 0)
@@ -335,6 +389,9 @@ public class TokenChatActivity extends AppCompatActivity {
         chatModelObject.setMessageId(messageId);
         if(quotedTextId!=null){
             chatModelObject.setQuotedMessageId(quotedTextId);
+        }
+        if(downloadUri!=null){
+            chatModelObject.setDownloadUri(downloadUri);
         }
         chatModelList.add(chatModelObject);
         Log.d(TAG, "setChatObject: "+chatModelList.size());
